@@ -44,6 +44,7 @@ pub struct ActionInfo {
     pub enabled: Option<String>,
 }
 
+// the enum variants must be in upper case letters, the server will send them in this style
 #[derive(RustcDecodable, Debug)]
 pub enum ChangeStatus {
     NEW,
