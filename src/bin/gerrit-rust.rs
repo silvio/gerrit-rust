@@ -15,6 +15,7 @@ pub mod topic;
 use clap::Arg;
 use clap::App;
 use clap::SubCommand;
+use std::error::Error;
 
 fn main() {
     let mut app = App::new("gerrit-rust")
@@ -89,7 +90,7 @@ fn main() {
     match out {
         Ok(_) => {},
         Err(e) => {
-            println!("Error: {}", e.message())
+            println!("Error: {}", e.description())
         },
     }
 }

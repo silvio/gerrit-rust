@@ -19,6 +19,7 @@ doctest = true
 clap = "2.9.3"
 curl = "0.3.0"
 git2 = "0.4.4"
+quick-error = "1.1.0"
 rustc-serialize = "0.3.19"
 toml-config = "0.4.0"
 url = "1.1.1"
