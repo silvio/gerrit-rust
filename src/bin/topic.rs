@@ -98,7 +98,7 @@ fn split_repo_reference(t: &str) -> (String, String) {
     let mut splited = t.split(':');
 
     let repo = String::from(splited.next().unwrap());
-    let mut reference =String::from("origin/master");
+    let mut reference = String::from("origin/master");
 
     if let Some(x) = splited.next() {
         reference = String::from(x);
