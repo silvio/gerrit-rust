@@ -61,7 +61,7 @@ impl<'value> From<clap::Values<'value>> for Query<'value> {
         let mut qb = Query::new();
 
         for (_, arg) in v.enumerate() {
-            qb.from_str(&arg);
+            qb.add_str(arg);
         }
         qb
     }
@@ -75,7 +75,7 @@ impl<'query> Query<'query> {
     }
 
     /// Split at first ':' from left so we can have ':' in search string
-    pub fn from_str(&mut self, x: &'query str) -> &mut Query<'query> {
+    pub fn add_str(&mut self, x: &'query str) -> &mut Query<'query> {
         // TODO: add preparsing of `x` to prevent missuse like `x=y` instead of `x:y`.
         self.query.push(x);
         self
