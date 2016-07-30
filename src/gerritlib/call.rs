@@ -68,7 +68,7 @@ pub enum CallMethod {
     Get,
 }
 
-/// Transform CallMethod type to String
+/// Transform `CallMethod` type to String
 impl fmt::Display for CallMethod {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
@@ -79,7 +79,7 @@ impl fmt::Display for CallMethod {
 
 /// Represents a HTTP request
 ///
-/// For usage we fill the CallRequest with an header and a body. Later we call via `handler` the
+/// For usage we fill the `CallRequest` with an header and a body. Later we call via `handler` the
 /// gerrit server.
 pub struct CallRequest<'a> {
     handle: RefMut<'a, curl::easy::Easy>,
