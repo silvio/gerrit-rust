@@ -23,13 +23,13 @@ pub struct AccountInfo {
 impl Display for AccountInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if let Some(x) = self.name.clone() {
-            let _ = write!(f, "{}", x);
+            try!(write!(f, "{}", x));
         } else {
-            let _ = write!(f, "uid:{}", self._account_id);
+            try!(write!(f, "uid:{}", self._account_id));
         };
 
         if let Some(x) = self.email.clone() {
-            let _ = write!(f, "{}", x);
+            try!(write!(f, "{}", x));
         };
 
         Ok(())
@@ -151,9 +151,9 @@ pub struct ChangeInfo {
 /// **TODO**: This is subject to change! Its to unflexible.
 impl Display for ChangeInfo {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let _ = writeln!(f, "* {project:.<41.41} {branch:.<20.20} {subject:.>30.30}", project=self.project, branch=self.branch, subject=self.subject);
-        let _ = writeln!(f, "| {changeid:41.41} {number:<31.10} {created:>19.19}", changeid=self.change_id, number=self._number, created=self.created);
-        let _ = writeln!(f, "| {topic:73.41} {updated:19.19}", topic=self.topic.clone().unwrap_or("N/A".to_string()), updated=self.updated);
+        try!(writeln!(f, "* {project:.<41.41} {branch:.<20.20} {subject:.>30.30}", project=self.project, branch=self.branch, subject=self.subject));
+        try!(writeln!(f, "| {changeid:41.41} {number:<31.10} {created:>19.19}", changeid=self.change_id, number=self._number, created=self.created));
+        try!(writeln!(f, "| {topic:73.41} {updated:19.19}", topic=self.topic.clone().unwrap_or("N/A".to_string()), updated=self.updated));
         write!(f, "` {status}, {owner}", owner=self.owner, status=self.status)
     }
 }
