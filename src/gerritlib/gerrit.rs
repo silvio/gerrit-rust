@@ -69,7 +69,7 @@ impl Changes {
     pub fn build_url(querylist: &[&str]) -> String {
         let mut out = String::new();
         for el in querylist.iter() {
-            out.push_str(el.clone());
+            out.push_str(el);
             out.push_str("+");
         }
         if let Some(x) = out.chars().last() {
