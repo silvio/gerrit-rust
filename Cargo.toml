@@ -16,8 +16,8 @@ path = "src/bin/gerrit-rust.rs"
 doctest = true
 
 [dependencies]
-clap = "2.9.3"
-curl = "0.3.0"
+clap = "2.10.0"
+curl = "0.3.1"
 git2 = "0.4.4"
 quick-error = "1.1.0"
 rustc-serialize = "0.3.19"
