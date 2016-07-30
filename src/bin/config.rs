@@ -70,16 +70,16 @@ impl Default for Config {
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let _ = writeln!(f, "* url ......... : {sche}://{base}:{port}/{appe}",
+        try!(writeln!(f, "* url ......... : {sche}://{base}:{port}/{appe}",
                sche = self.scheme.clone(),
                base = self.base.clone(),
                port = self.port.clone(),
                appe = self.appendix.clone(),
-        );
-        let _ = writeln!(f, "  user/pass ... : {user} / \"{pass}\"",
+        ));
+        try!(writeln!(f, "  user/pass ... : {user} / \"{pass}\"",
                user = self.username.clone(),
                pass = self.password.clone(),
-        );
+        ));
 
         write!(f, "  root ........ : {root}", root = self.root.clone())
     }
