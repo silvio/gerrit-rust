@@ -162,8 +162,11 @@ docker run --rm -it -p 0.0.0.0:8080:8080 -p 127.0.0.1:29418:29418 \
 
 ## curl
 
-With this we can handle good test:
-curl -X GET 'http://gerrit.aokp.co/projects/?&b=master'
+With this we can handle the rest api ...
+
+```text
+curl -x GET 'http://localhost:8080/projects/?&b=master'
+```
 
 ## useful links
 
