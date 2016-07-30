@@ -23,8 +23,8 @@ fn send_req<W: Write>(handle: &mut curl::easy::Easy,
         match body {
             Some(body) => {
                 let mut body = &body[..];
-                try!{handle.upload(true)};
-                try!{handle.in_filesize(body.len() as u64)};
+                try!(handle.upload(true));
+                try!(handle.in_filesize(body.len() as u64));
                 handle_req(handle, out, &mut |buf| body.read(buf).unwrap_or(0))
             },
             None => {
@@ -43,7 +43,7 @@ fn handle_req<W: Write>(handle: &mut curl::easy::Easy,
         {
             let mut handle = handle.transfer();
 
-            try!{handle.read_function(|buf| Ok(read(buf)))};
+            try!(handle.read_function(|buf| Ok(read(buf))));
             try!{handle.write_function(|data| {
                 Ok(match out.write_all(data) {
                     Ok(_) => data.len(),
@@ -56,7 +56,7 @@ fn handle_req<W: Write>(handle: &mut curl::easy::Easy,
                 true
             })};
 
-            try!{handle.perform()};
+            try!(handle.perform());
         }
 
         Ok((try!{handle.response_code()}, headers))
@@ -103,7 +103,7 @@ impl<'a> CallRequest<'a> {
                 CallMethod::Get => try!{handle.get(true)},
             };
 
-            try!{handle.url(&url)};
+            try!(handle.url(&url));
 
             Ok(CallRequest {
                 handle: handle,
@@ -115,9 +115,9 @@ impl<'a> CallRequest<'a> {
     /// helper function to handle a request, write the returned content to a `Write` capabel object
     /// and returns a `CallResponse`.
     fn send_into<W:Write>(mut self, out: &mut W) -> GGRResult<CallResponse> {
-        try!{self.handle.http_headers(self.headers)};
+        try!(self.handle.http_headers(self.headers));
 
-        let (status, headers) = try!{send_req(&mut self.handle, out, self.body)};
+        let (status, headers) = try!(send_req(&mut self.handle, out, self.body));
 
         Ok(CallResponse {
             status: status,
@@ -133,7 +133,7 @@ impl<'a> CallRequest<'a> {
     /// <https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/rest-api.html#output>
     pub fn send(self) -> GGRResult<CallResponse> {
         let mut out = Vec::new();
-        let mut rv = try!{self.send_into(&mut out)};
+        let mut rv = try!(self.send_into(&mut out));
 
         /* cut first 4 bytes from output stream */
         if out.starts_with(b")]}'") {
