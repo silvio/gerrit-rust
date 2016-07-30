@@ -98,7 +98,7 @@ impl Config {
             return false;
         }
 
-        return true;
+        true
     }
 
     pub fn get_base_url(&self) -> String {
