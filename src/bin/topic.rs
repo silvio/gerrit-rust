@@ -2,6 +2,7 @@
 use clap;
 use git2::Repository;
 use git2::BranchType;
+use gerritlib::error::GGRError;
 use gerritlib::error::GGRResult;
 
 /// manage subfunction of `topic` command
@@ -70,7 +71,9 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
                 println!("done");
             }
         },
-        Err(_) => {},
+        Err(err) => {
+            return Err(GGRError::from(err));
+        }
     };
 
     /* remove branch on all submodules */
@@ -87,7 +90,9 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
                         println!("done");
                     }
                 },
-                Err(_) => {},
+                Err(err) => {
+                    return Err(GGRError::from(err));
+                }
             };
         }
     }
