@@ -102,9 +102,10 @@ impl Config {
     }
 
     pub fn get_base_url(&self) -> String {
-        let appe = match self.appendix == "" {
-            true => "".to_string(),
-            false => format!("{}/", self.appendix)
+        let appe = if self.appendix == "" {
+            "".to_string()
+        } else {
+            format!("{}/", self.appendix)
         };
         format!("{scheme}://{base}:{port}/{appe}",
                 scheme = self.scheme,
