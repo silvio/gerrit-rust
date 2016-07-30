@@ -4,7 +4,6 @@
 use curl;
 use git2;
 use rustc_serialize;
-use std::error::Error;
 use std;
 use url;
 
