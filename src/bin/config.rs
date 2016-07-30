@@ -88,9 +88,7 @@ impl fmt::Display for Config {
 impl Config {
     /// Creates new Config from ConfigFile
     pub fn from_configfile(cf: ConfigFile) -> Config {
-        let config: Config = toml_config::ConfigFactory::load(cf.file.path().as_path());
-
-        config
+        toml_config::ConfigFactory::load(cf.file.path().as_path())
     }
 
     /// Config is only functional if `base` and `scheme` are set. This function returns `false` if
