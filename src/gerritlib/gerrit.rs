@@ -31,7 +31,7 @@ impl Gerrit {
     /// pull changes from gerrit server
     ///
     /// `querylist` and `additional_info` are used as filter in the call to gerrit.
-    pub fn changes(&self, querylist: Option<&Vec<&str>>, additional_infos: Option<&Vec<&str>>)
+    pub fn changes(&self, querylist: Option<&[&str]>, additional_infos: Option<&[&str]>)
         -> GGRResult<Vec<entities::ChangeInfo>>
     {
         let mut querystring = "pp=0&q=".to_string();
@@ -66,7 +66,7 @@ impl Gerrit {
 // helper structures
 struct Changes;
 impl Changes {
-    pub fn build_url(querylist: &Vec<&str>) -> String {
+    pub fn build_url(querylist: &[&str]) -> String {
         let mut out = String::new();
         for el in querylist.iter() {
             out.push_str(el.clone());
