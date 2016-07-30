@@ -149,7 +149,7 @@ impl ConfigFile {
         }
 
         let mut path = Path::new(folder.into());
-        let pathtemp = path.clone();
+        let pathtemp = path;
 
 
         loop {
