@@ -32,8 +32,14 @@ fn main() {
                                 )
                                 .arg(Arg::with_name("repo")
                                      .short("r")
-                                     .help("create topic branch in that folder/repository too")
-                                     .required(false)
+                                     .long("repo")
+                                     .help("Create topic branch on this repository. \
+                                            Use <repo>[:<git-reference>] to point to a specific repository. \
+                                            Current repository is '.' \
+                                            '<git-reference>' defaults to HEAD. \
+                                            Example: -r .:origin/master -r test -r project:4d6d711")
+                                     .next_line_help(true)
+                                     .required(true)
                                      .multiple(true)
                                      .takes_value(true)
                                 )

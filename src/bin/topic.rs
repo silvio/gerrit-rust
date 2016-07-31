@@ -99,15 +99,27 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
     Ok(())
 }
 
+/// splits a string to repository and reference
+///
+/// 't' can have this possible cases and output:
+///
+/// * 'a':      (repo=a, reference=HEAD)
+/// * 'a:b'     (repo=a, reference=b)
+/// * 'a:b:c'   (repo=a, reference=b)
 fn split_repo_reference(t: &str) -> (String, String) {
-    let mut splited = t.split(':');
+    let repo;
+    let reference;
 
-    let repo = String::from(splited.next().unwrap());
-    let mut reference = String::from("origin/master");
+    let mut splited = t.split('.');
 
-    if let Some(x) = splited.next() {
-        reference = String::from(x);
-    };
+    if splited.clone().count() >= 2 {
+        // unwrap are save in this context
+        repo = String::from(splited.next().unwrap());
+        reference = String::from(splited.next().unwrap());
+    } else {
+        reference = String::from("HEAD");
+        repo = t.to_owned().to_string();
+    }
 
     (repo, reference)
 }
