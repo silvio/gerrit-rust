@@ -24,7 +24,10 @@ pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
 
 /// creat, call and prints queries to a gerrit server
 fn query(y: &clap::ArgMatches) -> GGRResult<()> {
-    let userquery = Query::from(y.values_of("userquery").unwrap());
+    let mut userquery = match y.values_of("userquery") {
+        Some(x) => Query::from(x),
+        None => return Err(GGRError::General("No or bad userquery".into())),
+    };
 
     let configfile = try!(config::ConfigFile::discover(".", ".ggr.conf"));
     let config = config::Config::from_configfile(configfile);
