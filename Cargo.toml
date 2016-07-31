@@ -2,7 +2,7 @@
 name = "gerrit-rust"
 version = "0.1.1"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
-license = "GPLv3"
+license = "Apache-2.0/MIT"
 repository = "https://github.com/silvio/gerrit-rust"
 description = "Rust client to gerrit"
 
