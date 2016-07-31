@@ -1,6 +1,6 @@
 [package]
 name = "gerrit-rust"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
 license = "GPLv3"
 repository = "https://github.com/silvio/gerrit-rust"
