@@ -140,11 +140,14 @@ impl ConfigFile {
     /// folder: path where to search. Use `.` for current directory.
     /// name: name of config file
     pub fn discover(folder: &str, name: &str) -> GGRResult<ConfigFile> {
-        let cwd = env::current_dir().unwrap();
+        let cwd = try!(env::current_dir());
         let mut folder = folder;
 
         if folder.eq(".") {
-            folder = cwd.to_str().unwrap();
+            folder = match cwd.to_str().ok_or_else(|| GGRError::General("something is wrong with current directory".to_string())) {
+                Ok(x) => x,
+                Err(x) => return Err(x),
+            }
         }
 
         let mut path = Path::new(folder.into());
