@@ -12,9 +12,10 @@ pub mod changes;
 pub mod config;
 pub mod topic;
 
-use clap::Arg;
 use clap::App;
+use clap::Arg;
 use clap::SubCommand;
+use gerritlib::error::GGRError;
 use std::error::Error;
 
 fn main() {
@@ -85,10 +86,15 @@ fn main() {
 
     let matches = app.clone().get_matches();
 
+    let configfile = config::ConfigFile::discover(".", ".ggr.conf").expect("ConfigFile problem");
+    let config = config::Config::from_configfile(configfile);
+    if ! config.is_valid() {
+        panic!(GGRError::General("problem with configfile".to_string()));
+    }
 
     let out = match matches.subcommand() {
         ("topic", Some(x)) => { topic::manage(x) },
-        ("changes", Some(x)) => { changes::manage(x) },
+        ("changes", Some(x)) => { changes::manage(x, config) },
         ("config", Some(x)) => { config::manage(x) },
         _ => { let _ = app.print_help(); Ok(()) },
     };

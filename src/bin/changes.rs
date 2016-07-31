@@ -12,9 +12,9 @@ use config;
 /// Currently implemented sub commands:
 ///
 /// * query
-pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
+pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     match x.subcommand() {
-        ("query", Some(y)) => { query(y) },
+        ("query", Some(y)) => { query(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -23,18 +23,11 @@ pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
 }
 
 /// creat, call and prints queries to a gerrit server
-fn query(y: &clap::ArgMatches) -> GGRResult<()> {
+fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     let mut userquery = match y.values_of_lossy("userquery") {
         Some(x) => Query::from(x),
         None => return Err(GGRError::General("No or bad userquery".into())),
     };
-
-    let configfile = try!(config::ConfigFile::discover(".", ".ggr.conf"));
-    let config = config::Config::from_configfile(configfile);
-
-    if ! config.is_valid() {
-        return Err(GGRError::General("problem with configfile".to_string()));
-    }
 
     let gerrit = Gerrit::new(config.get_base_url());
 
