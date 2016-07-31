@@ -44,8 +44,14 @@ impl Gerrit {
         };
 
         if let Ok(cr) = self.call.get("/changes/".into(), querystring) {
-            // TODO: too much unwrap's here
-            let data2 = String::from_utf8(cr.body.unwrap()).unwrap();
+            let body = match cr.body {
+                Some(x) => x,
+                None => {
+                    /* no body content */
+                    return Ok(Vec::new());
+                }
+            };
+            let data2 = try!(String::from_utf8(body));
 
             let data4: Vec<ChangeInfo> = match rustc_serialize::json::decode(&data2) {
                 Ok(d) => {

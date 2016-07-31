@@ -34,6 +34,10 @@ quick_error! {
             description(err.description())
             from()
         }
+        FromUtf8(err: std::string::FromUtf8Error) {
+            description(err.description())
+            from()
+        }
     }
 }
 
