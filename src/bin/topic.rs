@@ -23,14 +23,21 @@ pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
 }
 
 fn create(y: &clap::ArgMatches) -> GGRResult<()> {
-    let branchname = y.value_of("branchname").unwrap();
+    let branchname = match y.value_of("branchname") {
+        Some(x) => x,
+        None => return Err(GGRError::General("Bad branchname".into())),
+    };
 
-    let repository_names = y.values_of("repo").unwrap();
+    let repository_names = match y.values_of_lossy("repo") {
+        Some(x) => x,
+        None => return Err(GGRError::General("Bad Reponame".into())),
+    };
+
     let mut repo;
-    if repository_names.count() > 0 {
+    if repository_names.len() > 0 {
         println!("Create topic branch \"{}\" at repository:", branchname);
-        for (_, subrep) in y.values_of("repo").unwrap().enumerate() {
-            let (repo_name, reference_name) = split_repo_reference(subrep);
+        for subrep in repository_names {
+            let (repo_name, reference_name) = split_repo_reference(&subrep);
 
             print!("* {}: ", &repo_name);
             repo = try!(Repository::open(&repo_name));
@@ -57,7 +64,10 @@ fn create(y: &clap::ArgMatches) -> GGRResult<()> {
 }
 
 fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
-    let branchname = y.value_of("branchname").unwrap();
+    let branchname = match y.value_of("branchname") {
+        Some(x) => x,
+        None => return Err(GGRError::General("Bad branchname".into())),
+    };
 
     let repo = try!(Repository::discover("."));
 
