@@ -31,14 +31,14 @@ impl Gerrit {
     /// pull changes from gerrit server
     ///
     /// `querylist` and `additional_info` are used as filter in the call to gerrit.
-    pub fn changes(&self, querylist: Option<&[&str]>, additional_infos: Option<&[&str]>)
+    pub fn changes(&self, querylist: Option<&Vec<String>>, additional_infos: Option<&[&str]>)
         -> GGRResult<Vec<entities::ChangeInfo>>
     {
         let mut querystring = "pp=0&q=".to_string();
         match querylist {
             None => { /* nothing to do, we call without filter */ },
             Some(x) => {
-                let urlfragment = Changes::build_url(x);
+                let urlfragment = Changes::build_url(&x);
                 querystring = format!("{}{}", querystring, urlfragment);
             },
         };
@@ -66,7 +66,7 @@ impl Gerrit {
 // helper structures
 struct Changes;
 impl Changes {
-    pub fn build_url(querylist: &[&str]) -> String {
+    pub fn build_url(querylist: &Vec<String>) -> String {
         let mut out = String::new();
         for el in querylist.iter() {
             out.push_str(el);

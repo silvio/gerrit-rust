@@ -24,7 +24,7 @@ pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
 
 /// creat, call and prints queries to a gerrit server
 fn query(y: &clap::ArgMatches) -> GGRResult<()> {
-    let mut userquery = match y.values_of("userquery") {
+    let mut userquery = match y.values_of_lossy("userquery") {
         Some(x) => Query::from(x),
         None => return Err(GGRError::General("No or bad userquery".into())),
     };
@@ -55,36 +55,36 @@ fn query(y: &clap::ArgMatches) -> GGRResult<()> {
 }
 
 #[derive(Clone)]
-struct Query<'query> {
-    query: Vec<&'query str>,
+struct Query {
+    query: Vec<String>,
 }
 
-impl<'value> From<clap::Values<'value>> for Query<'value> {
-    fn from(v: clap::Values<'value>) -> Query<'value> {
+impl From<Vec<String>> for Query {
+    fn from(v: Vec<String>) -> Query {
         let mut qb = Query::new();
 
-        for (_, arg) in v.enumerate() {
+        for arg in v {
             qb.add_str(arg);
         }
         qb
     }
 }
 
-impl<'query> Query<'query> {
-    pub fn new() -> Query<'query> {
+impl Query {
+    pub fn new() -> Query {
         Query {
             query: Vec::new()
         }
     }
 
     /// Split at first ':' from left so we can have ':' in search string
-    pub fn add_str(&mut self, x: &'query str) -> &mut Query<'query> {
+    pub fn add_str(&mut self, x: String) -> &mut Query {
         // TODO: add preparsing of `x` to prevent missuse like `x=y` instead of `x:y`.
         self.query.push(x);
         self
     }
 
-    pub fn get_query(&self) -> &Vec<&'query str> {
+    pub fn get_query(&self) -> &Vec<String> {
         &self.query
     }
 }
