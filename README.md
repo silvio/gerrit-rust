@@ -81,8 +81,9 @@ Some design considarations here.
 
 *   Other Ideas
 
-    *   [ ] **0.1.0** `ggr changes query <QUERY>`
-        query a searchstring to gerrit server.
+    *   [x] **0.1.0** `ggr changes query <QUERY>`
+        query a searchstring to gerrit server. Use as `QUERY` the same syntax
+        as in gerrit web frontend. eg
 
         *   [ ] Add `--fields` to get only needed fields back. As the current
         solution prints only some fields. A talk on #rust-de suggested some
@@ -91,8 +92,8 @@ Some design considarations here.
 
         Examples:
 
-        *   `ggr query changes status:open is:watched n:2`: querry open changes
-        which are watched.
+        *   `ggr query changes status:open is:watched n:2`: query open changes
+        which `watched` flag.
 
     *   [ ] create a helper script for setup of development environment
 
