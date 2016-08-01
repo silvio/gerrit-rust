@@ -41,10 +41,9 @@ Some design considarations here.
 *   manage of topics over more than one repository (git submodules like)
 
     *   [x] **0.1.0** `ggr topic create <BRANCHNAME> [-r sub:rev]`  
-        TBD Create branch at main folder and specified subfolders. If a branch
-        with same name exists it isn't touched. `rev` is the reference where
-        branch should created Defaults to `orign/master`. For base folder use
-        `-r .`.
+        Create branch at main folder and specified subfolders. If a branch with
+        same name exists it isn't touched. `rev` is the reference where branch
+        should created Defaults to `orign/master`. For base folder use `-r .`.
 
         *   [ ] execute in subfolders: create branch in this repo and in
                 baserepo.
@@ -52,38 +51,38 @@ Some design considarations here.
                 subrepositories.
 
     *   [x] **0.1.0** `ggr topic forget <BRANCHNAME> [-R]`  
-        TBD Delete a branch at mainfolder and and with `-R` in all subfolders.
+        Delete a branch at mainfolder and and with `-R` in all subfolders.
 
         *   [ ] Add option `-s` in conjunction with `-R` to remove all branches
             recursive which have no commit and the repositories are clean. Warn
             unclean repositories/branches.
 
     *   [ ] `ggr topic list -s`  
-        TBD List all development branches and the repositories. With `-s` it
+        List all development branches and the repositories. With `-s` it
         includes the commits in the branch like `git submodule summary`.
 
     *   [ ] `ggr topic checkout <BRANCHNAME>`  
-        TBD checkout a branch.
+        checkout a branch.
 
     *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
-        TBD Push changes to gerrit. Without `-b` its pushed to gerrit. With
-        option `-b` its pushed to a build server. Without branchname the
-        current branch is pushed.
+        Push changes to gerrit. Without `-b` its pushed to gerrit. With option
+        `-b` its pushed to a build server. Without branchname the current
+        branch is pushed.
 
     *   [ ] `ggr topic pull <BRANCHNAME>`  
-        TBD Pulls a branch.
+        Pulls a branch.
 
     *   [ ] `ggr topic reviewer [<BRANCHNAME>] [-r <MAIL>] [-c <MAIL>] [-t <MAIL>]`  
-        TBD Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time.
-        The information is put to branch config like `config.BRANCHNAME.ggr-re MAIL`.
-        Config lineentries start with ggr-\[cc/to/re\]. Without any options the
-        current reviewer/to/cc showed for current branch. Without BRANCHNAME te
-        current branch is taken.
+        Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time. The
+        information is put to branch config like `config.BRANCHNAME.ggr-re
+        MAIL`. Config lineentries start with ggr-\[cc/to/re\]. Without any
+        options the current reviewer/to/cc showed for current branch. Without
+        BRANCHNAME te current branch is taken.
 
 *   Other Ideas
 
     *   [ ] **0.1.0** `ggr changes query <QUERY>`
-        TBD: query a searchstring to gerrit server.
+        query a searchstring to gerrit server.
 
         *   [ ] Add `--fields` to get only needed fields back. As the current
         solution prints only some fields. A talk on #rust-de suggested some
@@ -105,8 +104,8 @@ Some design considarations here.
         *   [ ] auto push master branches to gerrit
 
     *   [ ] `ggr stat [-F <date>] [-T <data>]`  
-        TBD some statistics like opened and closed review since a week or
-        between a timespan. via iso-8601 like `date -Is`.
+        some statistics like opened and closed review since a week or between
+        a timespan. via iso-8601 like `date -Is`.
 
         Examples:
 
@@ -115,10 +114,10 @@ Some design considarations here.
         *   `ggr stat -F 2016-01-01`: from 02.01.2016T00:00 till now
         *   `ggr stat -T 2016-02-01`: from begin of gerrit usage till 01.02.2016T23:59:59
 
-    *   reviewer per commit (TBD)
-    *   reviewer per repository (TBD)
+    *   reviewer per commit
+    *   reviewer per repository
 
-    *   status of branches (TBD)  
+    *   status of branches  
         shows status of a branch (remote and local like `git remote show ...`
 
         *   `ggr status [<BRANCHNAME>]`
