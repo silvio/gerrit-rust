@@ -73,7 +73,7 @@ Some design considarations here.
         branch is pushed.
 
     *   [ ] `ggr topic pull <BRANCHNAME>`  
-        Pulls a branch.
+        Pulls a topic.
 
     *   [ ] `ggr topic reviewer [<BRANCHNAME>] [-r <MAIL>] [-c <MAIL>] [-t <MAIL>]`  
         Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time. The
@@ -88,10 +88,23 @@ Some design considarations here.
         query a searchstring to gerrit server. Use as `QUERY` the same syntax
         as in gerrit web frontend. eg
 
-        *   [ ] Add `--fields` to get only needed fields back. As the current
-        solution prints only some fields. A talk on #rust-de suggested some
-        solutions how to handle the input string field names with the
-        ChangesInfo struct. Eg: <https://is.gd/PADslX>.
+        *   [x] **0.1.4** Add `--fields` to get only needed fields back. A talk
+            on #rust-de suggested some solutions how to handle the input string
+            field names with the ChangesInfo struct. Eg: <https://is.gd/PADslX>
+
+            The current implementation use the parsed json string and give back
+            the values from this map.
+
+        *   [ ] Add a `--pretty` option to print it human readable.
+
+            *   unknown fields parameter are ignored without warning. default
+                machine format is:
+
+                `<field1> | <field2> | ... | <fieldN>`
+
+            *   pretty format needs to be defined
+
+        *   [ ] Add `--header` to get a header line with field names
 
         Examples:
 

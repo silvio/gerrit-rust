@@ -29,15 +29,19 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         None => return Err(GGRError::General("No or bad userquery".into())),
     };
 
+    let fieldslist = match y.values_of_lossy("fields") {
+        Some(x) => x,
+        None => return Err(GGRError::General("'fields' option wrong".into())),
+    };
+
+
     let mut gerrit = Gerrit::new(config.get_base_url());
 
     let response_changes = gerrit.changes(Some(userquery.get_query()), None, config.get_username(), config.get_password());
 
     match response_changes {
         Ok(changeinfos) => {
-            for ci in changeinfos {
-                println!("{}", ci);
-            }
+            println!("{}", changeinfos.as_string(&fieldslist));
         },
         Err(x) => {
             return Err(x);

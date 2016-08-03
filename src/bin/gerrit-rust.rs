@@ -66,6 +66,7 @@ fn main() {
                                             default is project,subject,topic")
                                      .short("f")
                                      .takes_value(true)
+                                     .default_value("project,subject,topic")
                                 )
                                 .arg(Arg::with_name("userquery")
                                      .help("user query for changes")

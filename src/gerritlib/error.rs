@@ -26,6 +26,10 @@ quick_error! {
             description(err.description())
             from()
         }
+        JsonParserError(err: rustc_serialize::json::ParserError) {
+            description(err.description())
+            from()
+        }
         Num(err: std::num::ParseIntError) {
             description(err.description())
             from()

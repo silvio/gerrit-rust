@@ -9,6 +9,7 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::Display;
+use rustc_serialize;
 
 #[derive(RustcDecodable, Debug)]
 pub struct AccountInfo {
@@ -156,6 +157,78 @@ impl Display for ChangeInfo {
         try!(writeln!(f, "| {changeid:41.41} {number:<31.10} {created:>19.19}", changeid=self.change_id, number=self._number, created=self.created));
         try!(writeln!(f, "| {topic:73.41} {updated:19.19}", topic=self.topic.clone().unwrap_or("N/A".to_string()), updated=self.updated));
         write!(f, "` {status}, {owner}", owner=self.owner, status=self.status)
+    }
+}
+
+pub struct ChangeInfos {
+    pub cis: Vec<ChangeInfo>,
+    pub json: Option<rustc_serialize::json::Json>,
+}
+
+impl ChangeInfos {
+    pub fn new() -> ChangeInfos {
+        ChangeInfos {
+            cis: Vec::new(),
+            json: None,
+        }
+    }
+
+    pub fn new_with_data(objs: Vec<ChangeInfo>, json: Option<rustc_serialize::json::Json>)
+    -> ChangeInfos {
+        ChangeInfos {
+            cis: objs,
+            json: json,
+        }
+    }
+
+    /// returns a String object of all objects and the needed fields.
+    pub fn as_string(&self, fields: &Vec<String>) -> String {
+        let mut out = String::new();
+        if let Some(obj) = self.json.clone() {
+            if let Some(array) = obj.as_array() {
+                for entry in array {
+                    let mut line = String::new();
+                    for field in fields {
+                        if let Some(element) = entry.find(&field) {
+                            let el = self.json_to_string(element);
+
+                            line.push_str(&format!("{}", el));
+                            line.push_str(" | ");
+                        }
+                    }
+                    out.push_str(line.trim_right_matches(" | "));
+                    out.push('\n');
+                }
+                out = out.trim_right_matches("\n").to_string();
+            }
+        }
+
+        return out;
+    }
+
+    fn json_to_string(&self, j: &rustc_serialize::json::Json) -> String {
+        let el = match *j {
+            rustc_serialize::json::Json::I64(x) => { format!("{}", x) },
+            rustc_serialize::json::Json::U64(x) => { format!("{}", x) },
+            rustc_serialize::json::Json::F64(x) => { format!("{}", x) },
+            rustc_serialize::json::Json::String(ref x) => { format!("{}", x) },
+            rustc_serialize::json::Json::Boolean(x) => { format!("{}", x) },
+            rustc_serialize::json::Json::Array(ref x) => {
+                let mut out = String::from("[");
+                for xel in x {
+                    format!("{},{}", out, self.json_to_string(xel));
+                }
+                out.push_str("]");
+                out
+            },
+            rustc_serialize::json::Json::Object(ref x) => {
+                // TODO: json parsing of a object, x is a BtreeMap type
+                format!("{:?}", x)
+            },
+            rustc_serialize::json::Json::Null => { "N/A".into() },
+        };
+
+        String::from(el)
     }
 }
 
