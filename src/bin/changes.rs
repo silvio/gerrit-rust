@@ -24,7 +24,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 
 /// creat, call and prints queries to a gerrit server
 fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
-    let mut userquery = match y.values_of_lossy("userquery") {
+    let userquery = match y.values_of_lossy("userquery") {
         Some(x) => Query::from(x),
         None => return Err(GGRError::General("No or bad userquery".into())),
     };
