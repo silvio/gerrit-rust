@@ -31,7 +31,7 @@ impl Gerrit {
     /// pull changes from gerrit server
     ///
     /// `querylist` and `additional_info` are used as filter in the call to gerrit.
-    pub fn changes(&self, querylist: Option<&Vec<String>>, additional_infos: Option<&[&str]>)
+    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<&[&str]>, username: &str, password: &str)
         -> GGRResult<Vec<entities::ChangeInfo>>
     {
         let mut querystring = "pp=0&q=".to_string();
@@ -43,6 +43,10 @@ impl Gerrit {
             },
         };
 
+        if !username.is_empty() && !password.is_empty() {
+            self.call.set_credentials(username, password);
+        }
+
         if let Ok(cr) = self.call.get("/changes/".into(), querystring) {
             let body = match cr.body {
                 Some(x) => x,
@@ -51,7 +55,7 @@ impl Gerrit {
                     return Ok(Vec::new());
                 }
             };
-            let data2 = try!(String::from_utf8(body));
+            let data2 = body.iter().fold(String::from(""), |news, el| format!("{}{}", news, el));
 
             let data4: Vec<ChangeInfo> = match rustc_serialize::json::decode(&data2) {
                 Ok(d) => {

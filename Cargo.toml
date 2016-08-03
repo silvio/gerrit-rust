@@ -17,9 +17,9 @@ doctest = true
 
 [dependencies]
 clap = "2.10.0"
-curl = "0.3.1"
 git2 = "0.4.4"
 quick-error = "1.1.0"
+regex = "0.1"
 rustc-serialize = "0.3.19"
 toml-config = "0.4.0"
 url = "1.1.1"

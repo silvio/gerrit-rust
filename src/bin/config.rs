@@ -101,6 +101,14 @@ impl Config {
         true
     }
 
+    pub fn get_username(&self) -> &str {
+        &self.username
+    }
+
+    pub fn get_password(&self) -> &str {
+        &self.password
+    }
+
     pub fn get_base_url(&self) -> String {
         let appe = if self.appendix == "" {
             "".to_string()

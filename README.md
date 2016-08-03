@@ -10,15 +10,18 @@ your knowledge.
 
 Some design considarations here.
 
+*   [x] **0.1.3** Use of system curl binary.  
+    curl-rust doesn't support digest authentication out of the box.
+    <https://github.com/alexcrichton/curl-rust/issues/120>
 *   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
     *   `baseurl`: base url with schema (http)
     *   `port`: used port
     *   `appendix`: for gerrit server under a subpath (not tested)
-    *   `username`: username for login
-        *   [ ] consider: without this entry we use the anonymous backend of
-            gerrit
-    *   `password`: password for login
+    *   [x] **0.1.3** User authentication, without `username` and/or `password`
+        we use the anonymous backend of gerrit
+        *   `username`: username for login
+        *   `password`: password for login
     *   `root`: true if this is the uppermost project of all repositories
         underneath
 
@@ -92,7 +95,7 @@ Some design considarations here.
 
         Examples:
 
-        *   `ggr query changes status:open is:watched n:2`: query open changes
+        *   `ggr changes query status:open is:watched n:2`: query open changes
         which `watched` flag.
 
     *   [ ] create a helper script for setup of development environment

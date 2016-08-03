@@ -2,7 +2,6 @@
 //! main entry for `gerrit-rust`
 
 extern crate clap;
-extern crate curl;
 extern crate gerritlib;
 extern crate git2;
 extern crate rustc_serialize;
