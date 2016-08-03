@@ -1,6 +1,6 @@
 [package]
 name = "gerrit-rust"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
 license = "Apache-2.0/MIT"
 repository = "https://github.com/silvio/gerrit-rust"
