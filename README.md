@@ -6,6 +6,10 @@ learner** project. Have patience with me :-)
 I'm happy about every PR, but I will ask questions about changes to learn from
 your knowledge.
 
+# Dependency
+
+*   A installed `curl` binary in `$PATH`
+
 # Design
 
 Some design considarations here.
