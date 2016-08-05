@@ -2,12 +2,9 @@
 //! Implements the gerrit structure
 
 use call::Call;
-use entities::*;
+use changes;
 use entities;
-use error::GGRError;
 use error::GGRResult;
-use rustc_serialize;
-use std::error::Error;
 
 
 /// `Gerrit` structure for management of several gerrit endpoints
@@ -31,7 +28,7 @@ impl Gerrit {
     /// pull changes from gerrit server
     ///
     /// `querylist` and `additional_info` are used as filter in the call to gerrit.
-    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<&[&str]>, username: &str, password: &str)
+    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>, username: &str, password: &str)
         -> GGRResult<entities::ChangeInfos>
     {
         let mut querystring = "pp=0&q=".to_string();
@@ -47,40 +44,7 @@ impl Gerrit {
             self.call.set_credentials(username, password);
         }
 
-        if let Ok(cr) = self.call.get("/changes/".into(), querystring) {
-            let body = match cr.body {
-                Some(x) => x,
-                None => {
-                    /* no body content */
-                    return Ok(entities::ChangeInfos::new());
-                }
-            };
-            let data2 = body.iter().fold(String::from(""), |news, el| format!("{}{}", news, el));
-
-            let data4: Vec<ChangeInfo> = match rustc_serialize::json::decode(&data2) {
-                Ok(d) => {
-                    d
-                },
-                Err(err) => {
-                    return Err(GGRError::General(format!("{}: {}", err.description(), data2)));
-                },
-            };
-
-            let data5 = match  rustc_serialize::json::Json::from_str(&data2) {
-                Ok(d) => d,
-                Err(e) => {
-                    println!("error: {}",e);
-                    return Err(GGRError::from(e));
-                }
-            };
-
-            let changeinfos = entities::ChangeInfos::new_with_data(data4, Some(data5));
-
-            return Ok(changeinfos);
-        } else {
-            println!("call problem");
-        }
-        Ok(entities::ChangeInfos::new())
+        changes::Changes::query_changes(&self.call, &querystring)
     }
 }
 

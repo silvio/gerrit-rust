@@ -8,6 +8,7 @@ extern crate rustc_serialize;
 extern crate url;
 
 pub mod call;
+pub mod changes;
 pub mod entities;
 pub mod error;
 pub mod gerrit;
