@@ -78,7 +78,7 @@ impl Changes {
 
 #[test]
 fn test_changes_build_url() {
-    assert_eq!(Changes::build_url(&vec!()), "");
-    assert_eq!(Changes::build_url(&vec!("a:1", "b:2")), "a:1+b:2");
-    assert_eq!(Changes::build_url(&vec!("a:1")), "a:1");
+    assert_eq!(Changes::build_url(&vec!()), "".to_string());
+    assert_eq!(Changes::build_url(&vec!("a:1".to_string(), "b:2".to_string())), "a:1+b:2".to_string());
+    assert_eq!(Changes::build_url(&vec!("a:1".to_string())), "a:1".to_string());
 }
