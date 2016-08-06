@@ -120,7 +120,7 @@ fn split_repo_reference(t: &str) -> (String, String) {
     let repo;
     let reference;
 
-    let mut splited = t.split('.');
+    let mut splited = t.split(':');
 
     if splited.clone().count() >= 2 {
         // unwrap are save in this context
@@ -132,5 +132,12 @@ fn split_repo_reference(t: &str) -> (String, String) {
     }
 
     (repo, reference)
+}
+
+#[test]
+fn test_split_repo_reference() {
+    assert_eq!(split_repo_reference("a"), ("a".to_string(),"HEAD".to_string()));
+    assert_eq!(split_repo_reference("a:b"), ("a".to_string(),"b".to_string()));
+    assert_eq!(split_repo_reference("a:b:c"), ("a".to_string(),"b".to_string()));
 }
 
