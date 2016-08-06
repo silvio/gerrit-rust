@@ -52,7 +52,7 @@ impl CallResponse {
         for line in stdout.lines() {
             status = match re_statuscode.captures(line) {
                 Some(x) => {
-                    if x.len() == 0 {
+                    if x.is_empty() {
                         status
                     } else {
                         try!(u32::from_str_radix(x.at(1).unwrap(), 10))
@@ -146,7 +146,7 @@ impl Call {
         path = path.replace("//", "/");
 
         sendurl.set_path(&path);
-        sendurl.set_query(Some(&querystring));
+        sendurl.set_query(Some(querystring));
 
         self.request(CallMethod::Get, sendurl.into_string())
     }

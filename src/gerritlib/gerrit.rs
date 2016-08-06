@@ -35,7 +35,7 @@ impl Gerrit {
         match querylist {
             None => { /* nothing to do, we call without filter */ },
             Some(x) => {
-                let urlfragment = Changes::build_url(&x);
+                let urlfragment = Changes::build_url(x);
                 querystring = format!("{}{}", querystring, urlfragment);
             },
         };
@@ -59,7 +59,7 @@ impl Gerrit {
 // helper structures
 struct Changes;
 impl Changes {
-    pub fn build_url(querylist: &Vec<String>) -> String {
+    pub fn build_url(querylist: &[String]) -> String {
         let mut out = String::new();
         for el in querylist.iter() {
             out.push_str(el);

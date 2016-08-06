@@ -38,6 +38,7 @@ impl Changes {
     }
 }
 
+#[derive(Default)]
 pub struct ChangeInfos {
     pub json: Option<rustc_serialize::json::Json>,
 }
@@ -57,24 +58,24 @@ impl ChangeInfos {
     }
 
     /// returns a String object of all objects and the needed fields.
-    pub fn as_string(&self, fields: &Vec<String>) -> String {
+    pub fn as_string(&self, fields: &[String]) -> String {
         let mut out = String::new();
         if let Some(obj) = self.json.clone() {
             if let Some(array) = obj.as_array() {
                 for entry in array {
                     let mut line = String::new();
                     for field in fields {
-                        if let Some(element) = entry.find(&field) {
+                        if let Some(element) = entry.find(field) {
                             let el = self.json_to_string(element);
 
-                            line.push_str(&format!("{}", el));
+                            line.push_str(&el);
                             line.push_str(" | ");
                         }
                     }
                     out.push_str(line.trim_right_matches(" | "));
                     out.push('\n');
                 }
-                out = out.trim_right_matches("\n").to_string();
+                out = out.trim_right_matches('\n').to_string();
             }
         }
 

@@ -34,7 +34,7 @@ fn create(y: &clap::ArgMatches) -> GGRResult<()> {
     };
 
     let mut repo;
-    if repository_names.len() > 0 {
+    if repository_names.is_empty() {
         println!("Create topic branch \"{}\" at repository:", branchname);
         for subrep in repository_names {
             let (repo_name, reference_name) = split_repo_reference(&subrep);
