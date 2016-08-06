@@ -161,22 +161,19 @@ impl Display for ChangeInfo {
 }
 
 pub struct ChangeInfos {
-    pub cis: Vec<ChangeInfo>,
     pub json: Option<rustc_serialize::json::Json>,
 }
 
 impl ChangeInfos {
     pub fn new() -> ChangeInfos {
         ChangeInfos {
-            cis: Vec::new(),
             json: None,
         }
     }
 
-    pub fn new_with_data(objs: Vec<ChangeInfo>, json: Option<rustc_serialize::json::Json>)
+    pub fn new_with_data(json: Option<rustc_serialize::json::Json>)
     -> ChangeInfos {
         ChangeInfos {
-            cis: objs,
             json: json,
         }
     }

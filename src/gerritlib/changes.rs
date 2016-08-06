@@ -20,15 +20,6 @@ impl Changes {
             };
             let data2 = body.iter().fold(String::from(""), |news, el| format!("{}{}", news, el));
 
-            let data4: Vec<entities::ChangeInfo> = match rustc_serialize::json::decode(&data2) {
-                Ok(d) => {
-                    d
-                },
-                Err(err) => {
-                    return Err(GGRError::General(format!("{}: {}", err.description(), data2)));
-                },
-            };
-
             let data5 = match  rustc_serialize::json::Json::from_str(&data2) {
                 Ok(d) => d,
                 Err(e) => {
@@ -37,7 +28,7 @@ impl Changes {
                 }
             };
 
-            let changeinfos = entities::ChangeInfos::new_with_data(data4, Some(data5));
+            let changeinfos = entities::ChangeInfos::new_with_data(Some(data5));
 
             return Ok(changeinfos);
         } else {
