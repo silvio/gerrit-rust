@@ -3,7 +3,6 @@
 
 use call::Call;
 use changes;
-use entities;
 use error::GGRResult;
 
 
@@ -30,7 +29,7 @@ impl Gerrit {
     /// `querylist` is used as filter for the call to gerrit. `additional_infos` gives some more
     /// information of one Change entity.
     pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>, username: &str, password: &str)
-        -> GGRResult<entities::ChangeInfos>
+        -> GGRResult<changes::ChangeInfos>
     {
         let mut querystring = "pp=0&q=".to_string();
         match querylist {
