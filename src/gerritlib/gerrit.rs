@@ -27,7 +27,8 @@ impl Gerrit {
 
     /// pull changes from gerrit server
     ///
-    /// `querylist` and `additional_info` are used as filter in the call to gerrit.
+    /// `querylist` is used as filter for the call to gerrit. `additional_infos` gives some more
+    /// information of one Change entity.
     pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>, username: &str, password: &str)
         -> GGRResult<entities::ChangeInfos>
     {
@@ -39,6 +40,14 @@ impl Gerrit {
                 querystring = format!("{}{}", querystring, urlfragment);
             },
         };
+
+        if let Some(labels) = additional_infos {
+            if !labels.is_empty() {
+                for label in labels {
+                    querystring = format!("{}&o={}", querystring, label);
+                }
+            }
+        }
 
         if !username.is_empty() && !password.is_empty() {
             self.call.set_credentials(username, password);

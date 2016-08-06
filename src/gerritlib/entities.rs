@@ -206,6 +206,43 @@ impl ChangeInfos {
         return out;
     }
 
+    /// prints all selectable fields os a search string
+    ///
+    /// returns two values. First one is the count of returned json objects and second value is a
+    /// HashMap<String, usize> with all fields and gow much they occure.
+    pub fn fieldslist(&self) -> (usize, HashMap<String, usize>) {
+        let mut out_hmap: HashMap<String, usize> = HashMap::new();
+        let mut entries = 0;
+
+        if let Some(obj) = self.json.clone() {
+            if let Some(array) = obj.as_array() {
+                entries = array.len();
+                for entry in array {
+                    match *entry {
+                        rustc_serialize::json::Json::Object(ref x) => {
+                            for key in x.keys() {
+                                let counter = out_hmap.entry(key.to_owned()).or_insert(0);
+                                *counter += 1;
+                            }
+                        }
+                        _ => continue,
+                    }
+                }
+            } else {
+                println!("no array");
+            }
+        }
+
+        (entries, out_hmap)
+    }
+
+    /// return the string in machinereadable format
+    pub fn raw(&self) -> String {
+        let json = self.json.clone();
+
+        format!("{}", json.unwrap_or(rustc_serialize::json::Json::String("".into())))
+    }
+
     fn json_to_string(&self, j: &rustc_serialize::json::Json) -> String {
         let el = match *j {
             rustc_serialize::json::Json::I64(x) => { format!("{}", x) },

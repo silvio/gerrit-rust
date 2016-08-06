@@ -29,19 +29,40 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         None => return Err(GGRError::General("No or bad userquery".into())),
     };
 
-    let fieldslist = match y.values_of_lossy("fields") {
+    let fields = match y.values_of_lossy("fields") {
         Some(x) => x,
         None => return Err(GGRError::General("'fields' option wrong".into())),
     };
 
+    let fieldslist = y.is_present("fieldslist");
+    let raw = y.is_present("raw");
+    let ofields  = y.values_of_lossy("ofields");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
 
-    let response_changes = gerrit.changes(Some(userquery.get_query()), None, config.get_username(), config.get_password());
+    let response_changes = gerrit.changes(Some(userquery.get_query()), ofields, config.get_username(), config.get_password());
 
     match response_changes {
         Ok(changeinfos) => {
-            println!("{}", changeinfos.as_string(&fieldslist));
+            if raw {
+                println!("{}", changeinfos.raw());
+                return Ok(());
+            }
+            if fieldslist {
+                let (count, hm) = changeinfos.fieldslist();
+                let mut printout = String::new();
+
+                let mut vec_hm: Vec<(&String, &usize)> = hm.iter().collect();
+                vec_hm.sort();
+
+                for entry in vec_hm {
+                    printout.push_str(&format!("{}({})", entry.0, entry.1));
+                    printout.push(' ');
+                }
+                println!("{} -> {}", count, printout);
+            } else {
+                println!("{}", changeinfos.as_string(&fields));
+            }
         },
         Err(x) => {
             return Err(x);

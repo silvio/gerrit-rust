@@ -110,6 +110,15 @@ Some design considarations here.
 
         *   [ ] Add `--header` to get a header line with field names
 
+        *   [x] **0.1.4** Add `--field-list` to get all selectable fields,
+            usable for `--fields` option on a second call.
+
+        *   [x] **0.1.4** Add `--raw` for json in raw format. Usable for pretty
+            printer over pipe
+
+        *   [x] **0.1.4** Option `-o`/`--ofields` to get additional information
+            of changes back (like REVISION etc ...)
+
         Examples:
 
         *   `ggr changes query status:open is:watched n:2`: query open changes

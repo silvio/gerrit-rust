@@ -130,11 +130,11 @@ impl Call {
         CallResponse::new(curl_out)
     }
 
-    /// Does a `GET` Request an returns a CallResponse. Only path and querystring is needed. The
-    /// base url is setup via [`Call::new()`] function.
+    /// Does a `GET` Request and returns a CallResponse. Only path and querystring is needed. The
+    /// base url was setup via [`Call::new()`] function.
     ///
     /// [`Call::new()`]: ./struct.Call.html#method.new
-    pub fn get(&self, path: &str, querystring: String) -> GGRResult<CallResponse> {
+    pub fn get(&self, path: &str, querystring: &str) -> GGRResult<CallResponse> {
         let mut sendurl = self.url.clone();
 
         let mut path = if self.username.is_some() || self.password.is_some() {
