@@ -12,7 +12,6 @@ pub mod config;
 pub mod topic;
 
 use clap::App;
-use clap::Arg;
 use clap::SubCommand;
 use gerritlib::error::GGRError;
 use std::error::Error;
@@ -21,42 +20,7 @@ fn main() {
     let mut app = App::new("gerrit-rust")
         .author("Silvio Fricke <silvio.fricke@gmail.com>")
         .about("some gerrit tools")
-        .subcommand(SubCommand::with_name("topic")
-                    .about("topic management")
-                    .subcommand(SubCommand::with_name("create")
-                                .about("Create topic branch")
-                                .arg(Arg::with_name("branchname")
-                                     .help("branch name to create")
-                                     .required(true)
-                                     .index(1)
-                                )
-                                .arg(Arg::with_name("repo")
-                                     .short("r")
-                                     .long("repo")
-                                     .help("Create topic branch on this repository. \
-                                            Use <repo>[:<git-reference>] to point to a specific repository. \
-                                            Current repository is '.' \
-                                            '<git-reference>' defaults to HEAD. \
-                                            Example: -r .:origin/master -r test -r project:4d6d711")
-                                     .next_line_help(true)
-                                     .required(true)
-                                     .multiple(true)
-                                     .takes_value(true)
-                                )
-                    )
-                    .subcommand(SubCommand::with_name("forget")
-                                .about("Delete topic branch")
-                                .arg(Arg::with_name("branchname")
-                                     .help("branch name to delete")
-                                     .required(true)
-                                     .index(1)
-                                )
-                                .arg(Arg::with_name("recursive")
-                                     .help("recursive remove of branch")
-                                     .short("R")
-                                )
-                    )
-        )
+        .subcommand(topic::menu())
         .subcommand(changes::menu())
         .subcommand(SubCommand::with_name("config")
                     .about("config management for ggr")

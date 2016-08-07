@@ -1,10 +1,47 @@
 
-use clap;
+use clap::{self, SubCommand, App, Arg};
 use git2::Repository;
 use git2::BranchType;
 use gerritlib::error::GGRError;
 use gerritlib::error::GGRResult;
 
+pub fn menu<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name("topic")
+    .about("topic management")
+    .subcommand(SubCommand::with_name("create")
+                .about("Create topic branch")
+                .arg(Arg::with_name("branchname")
+                     .help("branch name to create")
+                     .required(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("repo")
+                     .short("r")
+                     .long("repo")
+                     .help("Create topic branch on this repository. \
+                            Use <repo>[:<git-reference>] to point to a specific repository. \
+                            Current repository is '.' \
+                            '<git-reference>' defaults to HEAD. \
+                            Example: -r .:origin/master -r test -r project:4d6d711")
+                     .next_line_help(true)
+                     .required(true)
+                     .multiple(true)
+                     .takes_value(true)
+                )
+    )
+    .subcommand(SubCommand::with_name("forget")
+                .about("Delete topic branch")
+                .arg(Arg::with_name("branchname")
+                     .help("branch name to delete")
+                     .required(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("recursive")
+                     .help("recursive remove of branch")
+                     .short("R")
+                )
+    )
+}
 /// manage subfunction of `topic` command
 ///
 /// Currently implemented sub commands:
