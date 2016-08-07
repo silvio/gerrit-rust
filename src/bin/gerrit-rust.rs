@@ -12,7 +12,6 @@ pub mod config;
 pub mod topic;
 
 use clap::App;
-use clap::SubCommand;
 use gerritlib::error::GGRError;
 use std::error::Error;
 
@@ -22,12 +21,7 @@ fn main() {
         .about("some gerrit tools")
         .subcommand(topic::menu())
         .subcommand(changes::menu())
-        .subcommand(SubCommand::with_name("config")
-                    .about("config management for ggr")
-                    .subcommand(SubCommand::with_name("list")
-                                .help("List all config options")
-                    )
-        )
+        .subcommand(config::menu())
         ;
 
     let matches = app.clone().get_matches();

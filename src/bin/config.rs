@@ -1,7 +1,7 @@
 
 //! configuration related
 
-use clap;
+use clap::{self, SubCommand, App};
 use gerritlib::error::GGRError;
 use gerritlib::error::GGRResult;
 use std::env;
@@ -10,6 +10,14 @@ use std::fs;
 use std::io;
 use std::path::Path;
 use toml_config;
+
+pub fn menu<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name("config")
+    .about("config management for ggr")
+    .subcommand(SubCommand::with_name("list")
+                .help("List all config options")
+    )
+}
 
 /// manage subfunction of `config` command
 ///
