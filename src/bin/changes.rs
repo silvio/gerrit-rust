@@ -1,11 +1,48 @@
 
 //! manage endpoint `/changes/`
 
-use clap;
+use clap::{self, App, SubCommand, Arg};
 use gerritlib::error::GGRError;
 use gerritlib::error::GGRResult;
 use gerritlib::gerrit::Gerrit;
 use config;
+
+/// returns the *Changes* part of gerrit-rusts menu
+pub fn menu<'a, 'b>() -> App<'a, 'b> {
+    SubCommand::with_name("changes")
+    .about("changes management")
+    .subcommand(SubCommand::with_name("query")
+                .about("queries changes")
+                .arg(Arg::with_name("fields")
+                     .help("select fields to print,\
+                            default is project,subject,topic")
+                     .short("f")
+                     .takes_value(true)
+                     .default_value("project,subject,topic")
+                )
+                .arg(Arg::with_name("ofields")
+                     .help("return optional fields information")
+                     .short("o")
+                     .takes_value(true)
+                )
+                .arg(Arg::with_name("userquery")
+                     .help("user query for changes")
+                     .required(true)
+                     .multiple(true)
+                     .takes_value(true)
+                )
+                .arg(Arg::with_name("fieldslist")
+                     .help("get all fields useable for --fields options")
+                     .short("-l")
+                )
+                .arg(Arg::with_name("raw")
+                     .help("print machine readable raw json stream, useful for \
+                            pretty printer. `--fields` and `--fieldslist` are \
+                            ignored.")
+                     .short("r")
+                )
+        )
+}
 
 /// proxy function of implemented features
 ///
