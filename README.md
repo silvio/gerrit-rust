@@ -159,6 +159,8 @@ Some design considarations here.
 
     *   Document `gerritlib::call` module
 
+    *   [x] **0.1.5** Add .travis.yml
+
 # gerrit demo server local on your host via docker
 
 This creates a dockercontainer which is connectable via http://localhost:8080.
