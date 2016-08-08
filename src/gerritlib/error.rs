@@ -1,6 +1,7 @@
 
 //! Implements generic error type
 
+use curl;
 use git2;
 use regex;
 use rustc_serialize;
@@ -10,6 +11,10 @@ use url;
 quick_error! {
     #[derive(Debug)]
     pub enum GGRError {
+        Curl(err: curl::Error) {
+            description(err.description())
+            from()
+        }
         FromUtf8(err: std::string::FromUtf8Error) {
             description(err.description())
             from()

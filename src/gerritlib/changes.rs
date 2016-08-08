@@ -18,7 +18,7 @@ impl Changes {
                     return Ok(ChangeInfos::new());
                 }
             };
-            let data2 = body.iter().fold(String::from(""), |news, el| format!("{}{}", news, el));
+            let data2 = try!(String::from_utf8(body));
 
             let data5 = match  rustc_serialize::json::Json::from_str(&data2) {
                 Ok(d) => d,
