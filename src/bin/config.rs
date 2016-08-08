@@ -48,7 +48,7 @@ fn list(_: &clap::ArgMatches) -> GGRResult<()> {
 pub struct Config {
     /// scheme like http, https etc
     scheme: String,
-    /// base of url with scheme. Eg. localhost
+    /// base of url. Eg. localhost
     base: String,
     /// port of the http endpoint (defaults to 80)
     port: u16,
