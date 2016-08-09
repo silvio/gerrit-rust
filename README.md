@@ -29,6 +29,7 @@ Some design considarations here.
         *   `password`: password for login
     *   `root`: true if this is the uppermost project of all repositories
         underneath
+    *   [ ] Authentication (e.g.: digest, basic)
 
     *   Consider to configure via config file or put all settings into
         as entries in `.git/config`.  
