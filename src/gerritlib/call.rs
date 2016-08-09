@@ -4,15 +4,12 @@
 //! authorization implemented currently. <https://github.com/alexcrichton/curl-rust/issues/120>
 
 use curl;
-use error::GGRError;
 use error::GGRResult;
-use regex;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::fmt;
 use std::io::Read;
 use std::io::Write;
-use std;
 use url;
 
 /// helper function for Request without body content and with content
@@ -184,9 +181,9 @@ impl Call {
         let mut handle = self.handle.borrow_mut();
 
         if self.username.is_some() && self.password.is_some() {
-            handle.http_auth(curl::easy::Auth::new().digest(true));
-            handle.username(&self.username.clone().unwrap());
-            handle.password(&self.password.clone().unwrap());
+            try!(handle.http_auth(curl::easy::Auth::new().digest(true)));
+            try!(handle.username(&self.username.clone().unwrap()));
+            try!(handle.password(&self.password.clone().unwrap()));
         }
 
 
