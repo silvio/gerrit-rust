@@ -15,9 +15,7 @@ your knowledge.
 Some design considarations here.
 
 *   [ ] semver at version 1.0.0. Before this version no semver!
-*   [x] **0.1.3** Use of system curl binary.  
-    curl-rust doesn't support digest authentication out of the box.
-    <https://github.com/alexcrichton/curl-rust/issues/120>
+*   [x] **0.1.5** Use of curl-rs as http client
 *   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
     *   `baseurl`: base url with schema (http)
