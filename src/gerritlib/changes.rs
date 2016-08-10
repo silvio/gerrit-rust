@@ -119,6 +119,13 @@ impl ChangeInfos {
         format!("{}", json.unwrap_or(rustc_serialize::json::Json::String("".into())))
     }
 
+    /// return in human readable form
+    pub fn human(&self) -> String {
+        let json = self.json.clone();
+
+        format!("{}", json.unwrap_or(rustc_serialize::json::Json::String("".into())).pretty())
+    }
+
     fn json_to_string(&self, j: &rustc_serialize::json::Json) -> String {
         let el = match *j {
             rustc_serialize::json::Json::I64(x) => { format!("{}", x) },

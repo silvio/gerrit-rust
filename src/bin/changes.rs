@@ -40,6 +40,13 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                             pretty printer. `--fields` and `--fieldslist` are \
                             ignored.")
                      .short("r")
+                     .conflicts_with("human")
+                )
+                .arg(Arg::with_name("human")
+                     .help("print human readable json stream `--fields` and \
+                            `--fieldslist` are ignored.")
+                     .short("u")
+                     .conflicts_with("raw")
                 )
         )
 }
@@ -73,6 +80,7 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 
     let fieldslist = y.is_present("fieldslist");
     let raw = y.is_present("raw");
+    let human = y.is_present("human");
     let ofields  = y.values_of_lossy("ofields");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
@@ -81,6 +89,11 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 
     if raw {
         println!("{}", changeinfos.raw());
+        return Ok(());
+    }
+
+    if human {
+        println!("{}", changeinfos.human());
         return Ok(());
     }
 
