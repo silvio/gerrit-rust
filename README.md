@@ -28,6 +28,7 @@ Some design considarations here.
     *   `root`: true if this is the uppermost project of all repositories
         underneath
     *   [ ] Authentication (e.g.: digest, basic)
+        *   [x] only `digest` hardcoded supported
 
     *   Consider to configure via config file or put all settings into
         as entries in `.git/config`.  
