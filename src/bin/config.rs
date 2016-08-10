@@ -46,14 +46,8 @@ fn list(_: &clap::ArgMatches) -> GGRResult<()> {
 /// Holds configuration for gerrit
 #[derive(RustcDecodable, RustcEncodable)]
 pub struct Config {
-    /// scheme like http, https etc
-    scheme: String,
-    /// base of url. Eg. localhost
-    base: String,
-    /// port of the http endpoint (defaults to 80)
-    port: u16,
-    /// a root url path
-    appendix: String,
+    /// gerrit server endpoint (eg. https://geritserver.com:8080/gr)
+    api: String,
     /// username to login
     username: String,
     /// password for login
@@ -65,10 +59,7 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Config {
         Config {
-            scheme: "".to_owned(),
-            base: "".to_owned(),
-            port: 80,
-            appendix: "".to_owned(),
+            api: "".to_owned(),
             username: "".to_owned(),
             password: "".to_owned(),
             root: true,
@@ -78,11 +69,8 @@ impl Default for Config {
 
 impl fmt::Display for Config {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(writeln!(f, "* url ......... : {sche}://{base}:{port}/{appe}",
-               sche = self.scheme.clone(),
-               base = self.base.clone(),
-               port = self.port.clone(),
-               appe = self.appendix.clone(),
+        try!(writeln!(f, "* url ......... : {api}",
+               api = self.api.clone(),
         ));
         try!(writeln!(f, "  user/pass ... : {user} / \"{pass}\"",
                user = self.username.clone(),
@@ -99,14 +87,9 @@ impl Config {
         toml_config::ConfigFactory::load(cf.file.path().as_path())
     }
 
-    /// Config is only functional if `base` and `scheme` are set. This function returns `false` if
-    /// one of them is not set.
+    /// Config is only functional if `api` is set.
     pub fn is_valid(&self) -> bool {
-        if self.scheme.is_empty() || self.base.is_empty() {
-            return false;
-        }
-
-        true
+        !self.api.is_empty()
     }
 
     pub fn get_username(&self) -> &str {
@@ -118,17 +101,7 @@ impl Config {
     }
 
     pub fn get_base_url(&self) -> String {
-        let appe = if self.appendix == "" {
-            "".to_string()
-        } else {
-            format!("{}/", self.appendix)
-        };
-        format!("{scheme}://{base}:{port}/{appe}",
-                scheme = self.scheme,
-                base = self.base,
-                port = self.port,
-                appe = appe
-        )
+        format!("{}", self.api)
     }
 }
 
