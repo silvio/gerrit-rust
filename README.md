@@ -100,14 +100,8 @@ Some design considarations here.
             The current implementation use the parsed json string and give back
             the values from this map.
 
-        *   [ ] Add a `--pretty` option to print it human readable.
-
-            *   unknown fields parameter are ignored without warning. default
-                machine format is:
-
-                `<field1> | <field2> | ... | <fieldN>`
-
-            *   pretty format needs to be defined
+        *   [x] **0.1.6** Add a `--human` option to print it in human readable
+            format.
 
         *   [ ] Add `--header` to get a header line with field names
 
