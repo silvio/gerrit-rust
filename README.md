@@ -100,6 +100,16 @@ Some design considarations here.
             The current implementation use the parsed json string and give back
             the values from this map.
 
+            The selection of fields doesn't work smoothly. With `-o
+            CURRENT_REVISION -f revisions` we get back a json object. We need
+            a better way to transfer this information to the user.
+
+            some approaches on other projects:
+
+            *   <https://stedolan.github.io/jq/>
+            *   <https://github.com/tomnomnom/gron>
+            *   <https://github.com/mtdowling/jmespath.rs>
+
         *   [x] **0.1.6** Add a `--human` option to print it in human readable
             format.
 
