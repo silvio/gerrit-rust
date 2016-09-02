@@ -14,11 +14,15 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
     .subcommand(SubCommand::with_name("query")
                 .about("queries changes")
                 .arg(Arg::with_name("fields")
-                     .help("select fields to print,\
-                            default is project,subject,topic")
+                     .help("select fields to print; \
+                            default is project,subject,topic; \
+                            use '*' for all fields; \
+                            use '+' for json object start entries; \
+                            example: -f 'id,name,+'")
+                     .next_line_help(true)
                      .short("f")
                      .takes_value(true)
-                     .default_value("project,subject,topic")
+                     .default_value("id,project,subject,topic")
                 )
                 .arg(Arg::with_name("ofields")
                      .help("return optional fields information")
@@ -33,7 +37,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                 )
                 .arg(Arg::with_name("fieldslist")
                      .help("get all fields useable for --fields options")
-                     .short("-l")
+                     .short("l")
                 )
                 .arg(Arg::with_name("raw")
                      .help("print machine readable raw json stream, useful for \
@@ -66,7 +70,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     }
 }
 
-/// creat, call and prints queries to a gerrit server
+/// create, call and prints queries to a gerrit server
 fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     let userquery = match y.values_of_lossy("userquery") {
         Some(x) => Query::from(x),
@@ -110,7 +114,13 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         }
         println!("{} -> {}", count, printout);
     } else {
-        println!("{}", changeinfos.as_string(&fields));
+        /*
+        let f = fields.join(".*");
+        println!("join: {}", f);
+        */
+        for s in changeinfos.as_string(fields) {
+            println!("{}", s);
+        }
     }
 
     Ok(())
