@@ -16,8 +16,8 @@ path = "src/bin/gerrit-rust.rs"
 doctest = true
 
 [dependencies]
-clap = "2.10.0"
-curl = "0.3.4"
+clap = "2.11.0"
+curl = "0.3.5"
 git2 = "0.4.4"
 quick-error = "1.1.0"
 regex = "0.1"
