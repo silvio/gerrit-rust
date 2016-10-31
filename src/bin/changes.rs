@@ -13,16 +13,13 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
     .about("changes management")
     .subcommand(SubCommand::with_name("query")
                 .about("queries changes")
-                .arg(Arg::with_name("fields")
-                     .help("select fields to print; \
-                            default is project,subject,topic; \
-                            use '*' for all fields; \
-                            use '+' for json object start entries; \
-                            example: -f 'id,name,+'")
-                     .next_line_help(true)
-                     .short("f")
+                .arg(Arg::with_name("regexp-selector")
+                     .help("select fields to print; via regular expression")
                      .takes_value(true)
-                     .default_value("id,project,subject,topic")
+                     .conflicts_with("simple-selector")
+                     .long("regexp-selector")
+                     .multiple(true)
+                     .short("f")
                 )
                 .arg(Arg::with_name("ofields")
                      .help("return optional fields information")
@@ -77,19 +74,22 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         None => return Err(GGRError::General("No or bad userquery".into())),
     };
 
-    let fields = match y.values_of_lossy("fields") {
-        Some(x) => x,
-        None => return Err(GGRError::General("'fields' option wrong".into())),
+    let regsel = match y.values_of_lossy("regexp-selector") {
+        Some(b) => b,
+        None => vec!(String::from(".*")),
     };
 
     let fieldslist = y.is_present("fieldslist");
     let raw = y.is_present("raw");
     let human = y.is_present("human");
-    let ofields  = y.values_of_lossy("ofields");
+    let ofields  = match y.values_of_lossy("ofields") {
+        Some(b) => b,
+        None => vec!(String::from(".*")),
+    };
 
     let mut gerrit = Gerrit::new(config.get_base_url());
 
-    let changeinfos = try!(gerrit.changes(Some(userquery.get_query()), ofields, config.get_username(), config.get_password()));
+    let changeinfos = try!(gerrit.changes(Some(userquery.get_query()), Some(&ofields), config.get_username(), config.get_password()));
 
     if raw {
         println!("{}", changeinfos.raw());
@@ -114,11 +114,7 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         }
         println!("{} -> {}", count, printout);
     } else {
-        /*
-        let f = fields.join(".*");
-        println!("join: {}", f);
-        */
-        println!("{}", changeinfos.as_string(fields));
+        println!("{}", changeinfos.as_string_reg(&regsel));
     }
 
     Ok(())

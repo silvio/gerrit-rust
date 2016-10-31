@@ -32,7 +32,7 @@ impl Gerrit {
     ///
     /// `querylist` is used as filter for the call to gerrit. `additional_infos` gives some more
     /// information of one Change entity.
-    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>, username: &str, password: &str)
+    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<&Vec<String>>, username: &str, password: &str)
         -> GGRResult<changes::ChangeInfos>
     {
         let mut querystring = "pp=0&q=".to_string();
@@ -65,7 +65,7 @@ impl Gerrit {
     pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, username: &str, password: &str) -> GGRResult<()> {
         let ofields: Vec<String> = vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into());
 
-        let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(ofields), username, password));
+        let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(&ofields), username, password));
         let project_tip = changeinfos.project_tip().unwrap();
 
         // TODO: remove some unwraps here

@@ -98,22 +98,9 @@ Some design considarations here.
         query a searchstring to gerrit server. Use as `QUERY` the same syntax
         as in gerrit web frontend. eg
 
-        *   [x] **0.1.4** Add `--fields` to get only needed fields back. A talk
-            on #rust-de suggested some solutions how to handle the input string
-            field names with the ChangesInfo struct. Eg: <https://is.gd/PADslX>
-
-            The current implementation use the parsed json string and give back
-            the values from this map.
-
-            The selection of fields doesn't work smoothly. With `-o
-            CURRENT_REVISION -f revisions` we get back a json object. We need
-            a better way to transfer this information to the user.
-
-            some approaches on other projects:
-
-            *   <https://stedolan.github.io/jq/>
-            *   <https://github.com/tomnomnom/gron>
-            *   <https://github.com/mtdowling/jmespath.rs>
+        *   [x] **0.1.7** Add `--regexp-selector` to show only keys selected by
+            regular expression.
+            This remove the --fields selector introduced in 0.1.4.
 
         *   [x] **0.1.6** Add a `--human` option to print it in human readable
             format.

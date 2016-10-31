@@ -44,6 +44,7 @@ impl Changes {
 }
 
 /// Abstraction for Gron format into a Key/Val storage tyupe
+#[derive(Debug)]
 pub struct KeyValue {
     pub id: String,
     pub key: String,
@@ -67,18 +68,6 @@ impl From<String> for KeyValue {
         }
 
         out
-    }
-}
-
-impl KeyValue {
-    /// returns true if Self.key ends with one element of ew
-    fn key_end_with_one_of(&self, ew: &[String]) -> bool {
-        for e in ew {
-            if self.key.ends_with(e) {
-                return true;
-            }
-        }
-        false
     }
 }
 
@@ -124,9 +113,10 @@ impl ChangeInfos {
 
             for line in vec.split(|x| *x == b'\n') {
                 let kv = KeyValue::from(String::from_utf8_lossy(line).to_string());
+                out.push(kv);
 
-                let mut matched = false;
                 // key filter
+                /*
                 for r in &self.filter_key {
                     if let Ok(re) = regex::Regex::new(r) {
                         if re.is_match(&kv.key) {
@@ -147,8 +137,10 @@ impl ChangeInfos {
                 }
 
                 if matched {
-                    out.push(kv);
+                */
+                /*
                 }
+                */
             }
         }
         out
@@ -177,66 +169,17 @@ impl ChangeInfos {
         self
     }
 
-    /// returns a Vec<String> object. Only elements there names ends on one of `selector`s entries
-    /// are returned. Is a `selector` entry a '*' all fields are returned.
-    pub fn as_string(&self, selector: Vec<String>) -> String {
+    pub fn as_string_reg(&self, selector: &[String]) -> String {
         let vec = self.as_keyval_array();
-        let mut out = String::new();
-        let mut all_fields = false;
-        let mut with_object_start = false;
+        let mut out = String::from("");
 
-        let selector = {
-            let mut sel_v: Vec<String> = Vec::new();
-            for s in &selector {
-                // special operators
-                if s.eq("*") {
-                    all_fields = true;
-                    continue;
-                }
-                if s.eq("+") {
-                    with_object_start = true;
-                    continue;
-                }
-                if s.eq("[]") {
-                    continue;
-                }
-
-                // manipulate selector to have a '.' in front of all variables.
-                let mut s = s.clone();
-                s.insert(0, '.');
-                sel_v.push(s);
-            }
-            sel_v
-        };
-
-        // find longest 'sel'
-        let mut sel_max_len = 0;
-        for v in &vec {
-            if v.key.len() > sel_max_len  && (v.key_end_with_one_of(&selector) || all_fields) {
-                sel_max_len = v.key.len();
-            }
-        }
-
-        for v in &vec {
-            if v.key_end_with_one_of(&selector) || all_fields {
-                if v.key.is_empty() && v.val.is_empty() || (v.val == "{}" && !with_object_start) {
-                    continue;
-                }
-                out.push_str(&format!("{sel:width_sel$} {val}\n", sel=v.key, val=v.val, width_sel=sel_max_len));
-            }
-        }
-
-        out
-    }
-
-    pub fn as_string_reg(&self, selector: &str) -> Vec<String> {
-        let vec = self.as_keyval_array();
-        let mut out: Vec<String> = Vec::new();
-
-        if let Ok(re) = regex::Regex::new(selector) {
-            for kv in vec {
-                if re.is_match(&kv.key) {
-                    out.push(format!("{} {}", kv.key, kv.val));
+        'next_kv: for kv in vec {
+            for s in selector {
+                if let Ok(re) = regex::Regex::new(s) {
+                    if re.is_match(&kv.key) {
+                        out.push_str(&format!("{}.{} {}\n", kv.id, kv.key, kv.val));
+                        continue 'next_kv;
+                    }
                 }
             }
         }
@@ -285,7 +228,7 @@ impl ChangeInfos {
     pub fn human(&self) -> String {
         let json = self.json.clone();
 
-        format!("{}", &serde_json::ser::to_string_pretty(&json.unwrap_or(serde_json::value::Value::String("".into()))).unwrap_or("problem with pretty printing"))
+        serde_json::ser::to_string_pretty(&json.unwrap_or_else(|| serde_json::value::Value::String("".into()))).unwrap_or("problem with pretty printing".into())
     }
 
     pub fn to_entities(&self) -> GGRResult<Vec<entities::ChangeInfo>> {
