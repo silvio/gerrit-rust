@@ -70,7 +70,7 @@ Some design considarations here.
         includes the commits in the branch like `git submodule summary`.
 
     *   [ ] `ggr topic checkout <BRANCHNAME>`  
-        checkout a branch.
+        Checkout a branch on all repositories.
 
     *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
         Push changes to gerrit. Without `-b` its pushed to gerrit. With option
@@ -88,6 +88,9 @@ Some design considarations here.
         BRANCHNAME te current branch is taken.
 
 *   Other Ideas
+
+    *   [ ] implement a log mechanism to get debugging information via loglevel
+        switch
 
     *   [x] **0.1.0** `ggr changes query <QUERY>`
         query a searchstring to gerrit server. Use as `QUERY` the same syntax
