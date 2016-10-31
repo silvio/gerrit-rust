@@ -42,32 +42,38 @@ impl Changes {
     }
 }
 
-/// Abstraction for Gron format
-struct GronInfo {
-    sel: String,
-    val: String,
+/// Abstraction for Gron format into a Key/Val storage tyupe
+pub struct KeyValue {
+    pub id: String,
+    pub key: String,
+    pub val: String,
 }
 
-impl From<String> for GronInfo {
-    /// splits a string of 'a=b' style to `GronInfo { sel:"a", val:"b" }`
+impl From<String> for KeyValue {
+    /// splits a string of 'a=b' style to `KeyValue { sel:"a", val:"b" }`
     fn from(s: String) -> Self {
-        let mut out: GronInfo = GronInfo {
-            sel: String::new(),
+        let mut out: KeyValue = KeyValue {
+            id: String::new(),
+            key: String::new(),
             val: String::new(),
         };
-        let mut v = s.splitn(2, '=');
-        out.sel = String::from(v.next().unwrap_or("")).trim().to_string();
-        out.val = String::from(v.next().unwrap_or("")).trim().to_string();
+
+        let re = regex::Regex::new(r"^\[(?P<id>\di*?)].(?P<key>.*)=(?P<val>.*)$").unwrap();
+        for cap in re.captures_iter(&s) {
+            out.id = cap.name("id").unwrap_or("").trim().into();
+            out.key = cap.name("key").unwrap_or("").trim().into();
+            out.val = cap.name("val").unwrap_or("").trim().into();
+        }
 
         out
     }
 }
 
-impl GronInfo {
-    /// returns true if Self.sel ends with one element of ew
-    pub fn sel_ends_with_one_of(&self, ew: &Vec<String>) -> bool {
+impl KeyValue {
+    /// returns true if Self.key ends with one element of ew
+    fn key_end_with_one_of(&self, ew: &[String]) -> bool {
         for e in ew {
-            if self.sel.ends_with(e) {
+            if self.key.ends_with(e) {
                 return true;
             }
         }
@@ -75,9 +81,11 @@ impl GronInfo {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub struct ChangeInfos {
     pub json: Option<serde_json::value::Value>,
+    filter_key: Vec<String>,
+    filter_val: Vec<String>,
 }
 
 impl ChangeInfos {
@@ -85,6 +93,8 @@ impl ChangeInfos {
     pub fn new() -> ChangeInfos {
         ChangeInfos {
             json: None,
+            filter_key: Vec::new(),
+            filter_val: Vec::new(),
         }
     }
 
@@ -93,11 +103,16 @@ impl ChangeInfos {
     -> ChangeInfos {
         ChangeInfos {
             json: json,
+            filter_key: Vec::new(),
+            filter_val: Vec::new(),
         }
     }
 
-    /// returns the self.json as a array of GronInfo objects
-    fn as_selectinfo_array(&self) -> Vec<GronInfo> {
+    /// returns the self.json as a array of KeyValue objects
+    ///
+    /// The returned array is filtered through `filter_key`, `filter_val` function
+    pub fn as_keyval_array(&self) -> Vec<KeyValue> {
+        let mut out = Vec::new();
         if let Some(json) = self.json.clone() {
             let mut vec = Vec::new();
 
@@ -106,36 +121,86 @@ impl ChangeInfos {
                 return Vec::new();
             };
 
-            let v: Vec<GronInfo> = vec.split(|x| *x == '\n' as u8)
-                .map(|chunk| {
-                    GronInfo::from(String::from_utf8_lossy(chunk).to_string())
-                    })
-                .collect();
-            return v;
+            for line in vec.split(|x| *x == b'\n') {
+                let kv = KeyValue::from(String::from_utf8_lossy(line).to_string());
+
+                let mut matched = false;
+                // key filter
+                for r in &self.filter_key {
+                    if let Ok(re) = regex::Regex::new(r) {
+                        if re.is_match(&kv.key) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                // val filter
+                for r in &self.filter_val {
+                    if let Ok(re) = regex::Regex::new(r) {
+                        if re.is_match(&kv.val) {
+                            matched = true;
+                            break;
+                        }
+                    }
+                }
+
+                if matched {
+                    out.push(kv);
+                }
+            }
         }
-        return Vec::new();
+        out
+    }
+
+    /// add a regular expression filter for keys
+    ///
+    /// The filter needs to be resetted through `filter_reset`.
+    pub fn filter_key(&mut self, r: &str) -> &mut Self {
+        self.filter_key.push(String::from(r));
+        self
+    }
+
+    /// add a regular expression filter for values
+    ///
+    /// The filter needs to be resetted through `filter_reset`.
+    pub fn filter_val(&mut self, r: String) -> &mut Self {
+        self.filter_val.push(r);
+        self
+    }
+
+    /// reset key and value filter
+    pub fn filter_reset(&mut self) -> &mut Self {
+        self.filter_val.clear();
+        self.filter_key.clear();
+        self
     }
 
     /// returns a Vec<String> object. Only elements there names ends on one of `selector`s entries
     /// are returned. Is a `selector` entry a '*' all fields are returned.
-    pub fn as_string(&self, selector: Vec<String>) -> Vec<String> {
-        let vec = self.as_selectinfo_array();
-        let mut out: Vec<String> = Vec::new();
+    pub fn as_string(&self, selector: Vec<String>) -> String {
+        let vec = self.as_keyval_array();
+        let mut out = String::new();
         let mut all_fields = false;
         let mut with_object_start = false;
 
-        // manipulate selector to have a '.' in front of all variables.
         let selector = {
             let mut sel_v: Vec<String> = Vec::new();
             for s in &selector {
                 // special operators
                 if s.eq("*") {
                     all_fields = true;
+                    continue;
                 }
                 if s.eq("+") {
                     with_object_start = true;
+                    continue;
+                }
+                if s.eq("[]") {
+                    continue;
                 }
 
+                // manipulate selector to have a '.' in front of all variables.
                 let mut s = s.clone();
                 s.insert(0, '.');
                 sel_v.push(s);
@@ -146,17 +211,32 @@ impl ChangeInfos {
         // find longest 'sel'
         let mut sel_max_len = 0;
         for v in &vec {
-            if v.sel.len() > sel_max_len  && (v.sel_ends_with_one_of(&selector) || all_fields) {
-                sel_max_len = v.sel.len();
+            if v.key.len() > sel_max_len  && (v.key_end_with_one_of(&selector) || all_fields) {
+                sel_max_len = v.key.len();
             }
         }
 
         for v in &vec {
-            if v.sel_ends_with_one_of(&selector) || all_fields {
-                if v.sel.is_empty() && v.val.is_empty() || (v.val == "{}" && !with_object_start) {
+            if v.key_end_with_one_of(&selector) || all_fields {
+                if v.key.is_empty() && v.val.is_empty() || (v.val == "{}" && !with_object_start) {
                     continue;
                 }
-                out.push(format!("{sel:width_sel$} {val}", sel=v.sel, val=v.val, width_sel=sel_max_len));
+                out.push_str(&format!("{sel:width_sel$} {val}\n", sel=v.key, val=v.val, width_sel=sel_max_len));
+            }
+        }
+
+        out
+    }
+
+    pub fn as_string_reg(&self, selector: &str) -> Vec<String> {
+        let vec = self.as_keyval_array();
+        let mut out: Vec<String> = Vec::new();
+
+        if let Ok(re) = regex::Regex::new(selector) {
+            for kv in vec {
+                if re.is_match(&kv.key) {
+                    out.push(format!("{} {}", kv.key, kv.val));
+                }
             }
         }
 
