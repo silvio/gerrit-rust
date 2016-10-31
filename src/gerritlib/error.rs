@@ -4,7 +4,7 @@
 use curl;
 use git2;
 use regex;
-use rustc_serialize;
+use serde_json;
 use std;
 use url;
 
@@ -27,11 +27,7 @@ quick_error! {
             description(err.message())
             from()
         }
-        JsonDecoder(err: rustc_serialize::json::DecoderError) {
-            description(err.description())
-            from()
-        }
-        JsonParserError(err: rustc_serialize::json::ParserError) {
+        JsonError(err: serde_json::error::Error) {
             description(err.description())
             from()
         }

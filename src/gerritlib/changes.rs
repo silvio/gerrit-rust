@@ -3,7 +3,8 @@ use call;
 use error::GGRError;
 use error::GGRResult;
 use gron;
-use rustc_serialize;
+use serde_json;
+use regex;
 use std::collections::HashMap;
 
 
@@ -23,7 +24,7 @@ impl Changes {
             };
             let data2 = try!(String::from_utf8(body));
 
-            let data5 = match  rustc_serialize::json::Json::from_str(&data2) {
+            let data5 = match serde_json::de::from_str(&data2) {
                 Ok(d) => d,
                 Err(e) => {
                     println!("error: {}",e);
@@ -76,7 +77,7 @@ impl GronInfo {
 
 #[derive(Default)]
 pub struct ChangeInfos {
-    pub json: Option<rustc_serialize::json::Json>,
+    pub json: Option<serde_json::value::Value>,
 }
 
 impl ChangeInfos {
@@ -88,7 +89,7 @@ impl ChangeInfos {
     }
 
     /// creates new ChangeInfos object with an initial ChangeInfos.json value
-    pub fn new_with_data(json: Option<rustc_serialize::json::Json>)
+    pub fn new_with_data(json: Option<serde_json::value::Value>)
     -> ChangeInfos {
         ChangeInfos {
             json: json,
@@ -175,7 +176,7 @@ impl ChangeInfos {
                 entries = array.len();
                 for entry in array {
                     match *entry {
-                        rustc_serialize::json::Json::Object(ref x) => {
+                        serde_json::value::Value::Object(ref x) => {
                             for key in x.keys() {
                                 let counter = out_hmap.entry(key.to_owned()).or_insert(0);
                                 *counter += 1;
@@ -196,14 +197,14 @@ impl ChangeInfos {
     pub fn raw(&self) -> String {
         let json = self.json.clone();
 
-        format!("{}", json.unwrap_or(rustc_serialize::json::Json::String("".into())))
+        format!("{}", json.unwrap_or(serde_json::value::Value::String("".into())))
     }
 
     /// return in human readable form
     pub fn human(&self) -> String {
         let json = self.json.clone();
 
-        format!("{}", json.unwrap_or(rustc_serialize::json::Json::String("".into())).pretty())
+        format!("{}", &serde_json::ser::to_string_pretty(&json.unwrap_or(serde_json::value::Value::String("".into()))).unwrap_or("problem with pretty printing"))
     }
 }
 
