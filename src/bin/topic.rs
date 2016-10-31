@@ -4,6 +4,8 @@ use git2::Repository;
 use git2::BranchType;
 use gerritlib::error::GGRError;
 use gerritlib::error::GGRResult;
+use gerritlib::gerrit::Gerrit;
+use config;
 
 pub fn menu<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("topic")
@@ -41,6 +43,25 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .short("R")
                 )
     )
+    .subcommand(SubCommand::with_name("pull")
+                .about("Pull a topic on current and all sub repositories")
+                .arg(Arg::with_name("topicname")
+                     .help("topic to pull")
+                     .required(true)
+                     .takes_value(true)
+                 )
+                .arg(Arg::with_name("branchname")
+                     .help("local branch name, without this the remote branch name is taken")
+                     .short("b")
+                     .long("branch")
+                     .takes_value(true)
+                )
+                .arg(Arg::with_name("force")
+                     .help("local existing branches are force moved")
+                     .short("f")
+                     .long("force")
+                )
+    )
 }
 /// manage subfunction of `topic` command
 ///
@@ -48,10 +69,12 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
 ///
 /// * create
 /// * forget
-pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
+/// * pull
+pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
+        ("pull", Some(y)) => { pull(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -59,6 +82,7 @@ pub fn manage(x: &clap::ArgMatches) -> GGRResult<()> {
     }
 }
 
+/// Create topics
 fn create(y: &clap::ArgMatches) -> GGRResult<()> {
     let branchname = match y.value_of("branchname") {
         Some(x) => x,
@@ -100,6 +124,7 @@ fn create(y: &clap::ArgMatches) -> GGRResult<()> {
     Ok(())
 }
 
+/// delete topics
 fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
     let branchname = match y.value_of("branchname") {
         Some(x) => x,
@@ -176,5 +201,19 @@ fn test_split_repo_reference() {
     assert_eq!(split_repo_reference("a"), ("a".to_string(),"HEAD".to_string()));
     assert_eq!(split_repo_reference("a:b"), ("a".to_string(),"b".to_string()));
     assert_eq!(split_repo_reference("a:b:c"), ("a".to_string(),"b".to_string()));
+}
+
+/// pull topics
+fn pull(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+    if !config.is_root() {
+        return Err(GGRError::General("You have to run topic::pull on the main/root repository".into()));
+    }
+
+    let topicname = y.value_of("topicname").expect("no or bad topicname");
+    let force = y.is_present("force");
+    let local_branch_name = y.value_of("branchname").unwrap_or(topicname);
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+    gerrit.fetch_topic(topicname, local_branch_name, force, config.get_username(), config.get_password())
 }
 

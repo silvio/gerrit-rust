@@ -6,6 +6,7 @@ use gron;
 use serde_json;
 use regex;
 use std::collections::HashMap;
+use entities;
 
 
 pub struct Changes { }
@@ -285,6 +286,83 @@ impl ChangeInfos {
         let json = self.json.clone();
 
         format!("{}", &serde_json::ser::to_string_pretty(&json.unwrap_or(serde_json::value::Value::String("".into()))).unwrap_or("problem with pretty printing"))
+    }
+
+    pub fn to_entities(&self) -> GGRResult<Vec<entities::ChangeInfo>> {
+        let json = self.raw();
+
+        match serde_json::de::from_str(&json) {
+            Ok(decode) => { Ok(decode) },
+            Err(r) => {
+                println!("decode error: {}", r);
+                Err(GGRError::from(r))
+            },
+        }
+    }
+
+    pub fn entity_from_commit(&self, commit: &str) -> GGRResult<entities::ChangeInfo> {
+        let entities = try!(self.to_entities());
+
+        for element in entities {
+            if let Some(ref revisions) = element.revisions {
+                for rev in revisions.keys() {
+                    if *rev == commit {
+                        return Ok(element.clone());
+                    }
+                }
+            }
+        }
+
+        Err(GGRError::General("no entity found".into()))
+    }
+
+    /// returns a HashMap with project and tip of a topic.changeset
+    pub fn project_tip(&self) -> GGRResult<HashMap<String, String>> {
+        let entities = try!(self.to_entities());
+        // find involved projects
+        let mut list_of_projects = Vec::new();
+        for element in &entities {
+            let project = &element.project;
+            if !list_of_projects.contains(project) {
+                list_of_projects.push(project.clone());
+            }
+        }
+
+        // find tip of every project
+        let mut project_tip: HashMap<String, String> = HashMap::new();
+        for project in list_of_projects {
+            // find in entities the last change of every project for this topic
+            let mut list_all_parents = Vec::new();
+            for element in &entities {
+                if let Some(ref cur_revision) = element.current_revision {
+                    if let Some(ref revisions) = element.revisions {
+                        if let Some(rev) = revisions.get(cur_revision) {
+                            if let Some(ref commit) = rev.commit {
+                                if let Some(ref parents) = commit.parents {
+                                    for p in parents {
+                                        list_all_parents.push(&p.commit);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            for element in &entities {
+                if element.project == project {
+                    if let Some(ref cur_revision) = element.current_revision {
+                        if !list_all_parents.contains(&cur_revision) {
+                            // a tip commit is never a parent for a topic
+                            project_tip.insert(project, cur_revision.clone());
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(project_tip)
     }
 }
 

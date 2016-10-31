@@ -77,8 +77,10 @@ Some design considarations here.
         `-b` its pushed to a build server. Without branchname the current
         branch is pushed.
 
-    *   [ ] `ggr topic pull <BRANCHNAME>`  
-        Pulls a topic.
+    *   [x] **0.1.7** `ggr topic pull [-f] [-b branchname] <topicname>`  
+        Pull latest version of commits for a topic. Create for all
+        changes a branch with the patch identifier as name, or with `-b` with
+        a given branchname.
 
     *   [ ] `ggr topic reviewer [<BRANCHNAME>] [-r <MAIL>] [-c <MAIL>] [-t <MAIL>]`  
         Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time. The

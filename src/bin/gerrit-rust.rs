@@ -33,7 +33,7 @@ fn main() {
     }
 
     let out = match matches.subcommand() {
-        ("topic", Some(x)) => { topic::manage(x) },
+        ("topic", Some(x)) => { topic::manage(x, config) },
         ("changes", Some(x)) => { changes::manage(x, config) },
         ("config", Some(x)) => { config::manage(x) },
         _ => { let _ = app.print_help(); Ok(()) },

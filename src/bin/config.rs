@@ -100,8 +100,12 @@ impl Config {
         &self.password
     }
 
-    pub fn get_base_url(&self) -> String {
-        format!("{}", self.api)
+    pub fn get_base_url(&self) -> &str {
+        &self.api
+    }
+
+    pub fn is_root(&self) -> &bool {
+        &self.root
     }
 }
 

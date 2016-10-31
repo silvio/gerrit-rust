@@ -118,9 +118,7 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         let f = fields.join(".*");
         println!("join: {}", f);
         */
-        for s in changeinfos.as_string(fields) {
-            println!("{}", s);
-        }
+        println!("{}", changeinfos.as_string(fields));
     }
 
     Ok(())
