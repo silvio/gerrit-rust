@@ -16,17 +16,17 @@ path = "src/bin/gerrit-rust.rs"
 doctest = true
 
 [dependencies]
-clap = "2.17.1"
-curl = "0.3.9"
-git2 = "0.4.4"
-quick-error = "1.1.0"
-regex = "0.1.80"
-rustc-serialize = "0.3.19"
-serde = "0.8.17"
-serde_json = "0.8.3"
-serde_derive = "0.8.17"
-toml-config = "0.4.0"
-url = "1.2.3"
+clap = "2.17"
+curl = "0.3"
+git2 = "0.4"
+quick-error = "1.1"
+regex = "0.1"
+rustc-serialize = "0.3"
+serde = "0.8"
+serde_json = "0.8"
+serde_derive = "0.8"
+toml-config = "0.4"
+url = "1.2"
 
 [dependencies.rust-gron]
 version = "*"
