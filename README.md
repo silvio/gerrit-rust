@@ -8,7 +8,7 @@ your knowledge.
 
 # Dependency
 
-*   A installed `curl` binary in `$PATH`
+*   A installed `git` binary in `$PATH`
 
 # Design
 

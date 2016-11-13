@@ -7,7 +7,7 @@ use error::GGRResult;
 use error::GGRError;
 use git2::Repository;
 use git2::BranchType;
-use git2::Oid;
+use std::process::Command;
 
 
 /// `Gerrit` structure for management of several gerrit endpoints
@@ -68,41 +68,53 @@ impl Gerrit {
         let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(ofields), username, password));
         let project_tip = changeinfos.project_tip().unwrap();
 
-        // TODO: remove some unwraps here
-        // TODO: un-indent this part some more
         // try to fetch topic for main_repo and all submodules
         'next_ptip: for (p_name, p_tip) in project_tip {
+            print!("fetch {} for {} ... ", p_name, p_tip);
             // check for root repository
             if let Ok(main_repo) = Repository::open(".") {
-                match fetch_from_repo(&main_repo, &changeinfos, force, topicname, local_branch_name, &p_name, &p_tip) {
+                // check changes on root repository
+                match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip) {
                     Ok((true,m)) => {
-                        println!("OK ({})", m);
+                        println!("{}", m);
+
                         continue;
                     },
-                    Ok((false, _)) => {
+                    Ok((false, m)) => {
+                        println!("KO\n  Error: {}", m.trim());
                     },
                     Err(r) => {
-                        println!("Error: {}", r.to_string());
+                        // hide all other errors
+                        let r = r.to_string();
+                        if !r.is_empty() {
+                            println!("KO\nError: {}", r.to_string().trim());
+                        }
                     }
                 };
-
 
                 // check for submodules
                 if let Ok(smodules) = main_repo.submodules() {
                     for smodule in smodules {
                         if let Ok(sub_repo) = smodule.open() {
-                            match fetch_from_repo(&sub_repo, &changeinfos, force, topicname, local_branch_name, &p_name, &p_tip) {
+                            match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip) {
                                 Ok((true, m)) => {
-                                    println!("OK ({})", m);
+                                    println!("{}", m);
+
                                     continue 'next_ptip;
                                 },
-                                Ok((false, _)) => {
-                                    continue 'next_ptip;
+                                Ok((false, m)) => {
+                                    println!("KO\n  Error: {}", m.trim());
+                                    continue;
                                 },
                                 Err(r) => {
-                                    println!("Error: {}", r.to_string());
+                                    let r = r.to_string();
+                                    if !r.is_empty() {
+                                                println!("KO\nError: {}", r.to_string().trim());
+                                    }
                                 }
                             }
+                        } else {
+                            println!("{} not opened", smodule.name().unwrap());
                         }
                     }
                 }
@@ -114,74 +126,82 @@ impl Gerrit {
 
 }
 
+/// convience function to checkout a `branch` on a `repo`. If `print_status` is true, messages are
+/// printed
+fn checkout_repo(repo: &Repository, branchname: &str) -> GGRResult<()> {
+    if repo.is_bare() {
+        return Err(GGRError::General("repository needs to be a workdir and not bare".into()));
+    }
+
+    let output_checkout = try!(Command::new("git")
+        .current_dir(repo.workdir().unwrap())
+        .arg("checkout")
+        .arg(branchname)
+        .output());
+
+    if output_checkout.status.success() {
+        return Ok(());
+    }
+
+    Err(GGRError::General(String::from_utf8_lossy(&output_checkout.stderr).into()))
+}
+
 /// convience function to pull a `p_tip` from a `repo`, if `basename(repo.url)` same as `p_name`
 /// is.
 ///
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
-/// is a reflog message.
-fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, topicname: &str, local_branch_name: &str, p_name: &str, p_tip: &str) -> GGRResult<(bool, String)> {
+/// is a status message.
+fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, local_branch_name: &str, p_name: &str, p_tip: &str) -> GGRResult<(bool, String)> {
+    if repo.is_bare() {
+        return Err(GGRError::General(format!("repository path '{:?}' is bare, we need a workdir", repo.path())));
+    }
+
     for remote_name in repo.remotes().unwrap().iter() {
-        if let Ok(mut remote) = repo.find_remote(remote_name.unwrap_or("")) {
+        if let Ok(remote) = repo.find_remote(remote_name.unwrap()) {
             let url = remote.url().unwrap().to_owned();
-            if url_to_projectname(&url).unwrap() == p_name {
+            let check_project_names = vec!(
+                p_name.into(),
+                format!("{}.git", p_name)
+            );
+            if check_project_names.contains(&String::from(url_to_projectname(&url).unwrap())) {
                 if let Ok(entity) = ci.entity_from_commit(p_tip) {
                     if let Some(ref cur_rev) = entity.current_revision {
                         if let Some(ref revisions) = entity.revisions {
-                            let reference = &revisions.get(cur_rev).unwrap().reference;
+                            let reference = &revisions.get(cur_rev).unwrap().fetch.get("http").unwrap().reference;
                             let force_string = if force {"+"} else { "" };
-                            let refspec = format!("{}{}", force_string, reference);
-                            let reflog = format!("ggr: topic pull {}:\"{}\":{} ({}) commit:{}", p_name, topicname, reference, refspec, p_tip);
+                            let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
 
-                            let ret = match remote.fetch(&[&refspec], None, Some(&reflog)) {
-                                Err(r) => {
-                                    Err(GGRError::from(r))
-                                },
-                                Ok(_) => {
-                                    match Oid::from_str(p_tip) {
-                                        Ok(oid) => {
-                                            match repo.find_commit(oid) {
-                                                Ok(commit) => {
-                                                    // check branch exists and no force
-                                                    let (real_branchname, real_force) = match repo.find_branch(local_branch_name, BranchType::Local) {
-                                                        Ok(_) => {
-                                                            if force {
-                                                                (local_branch_name, force)
-                                                            } else {
-                                                                println!("branch '{}' exists, checkout to '{}'", local_branch_name, reference);
-                                                                (reference.as_str(), true)
-                                                            }
-                                                        },
-                                                        Err(_) => {
-                                                            (local_branch_name, force)
-                                                        }
-                                                    };
-                                                    match repo.branch(real_branchname, &commit, real_force) {
-                                                        Ok(_) => Ok((true, reflog)),
-                                                        Err(r) => {
-                                                            Err(GGRError::from(r))
-                                                        },
-                                                    }
-                                                },
-                                                Err(r) => {
-                                                    Err(GGRError::from(r))
-                                                }
-                                            }
-                                        },
-                                        Err(r) => {
-                                            Err(GGRError::from(r))
-                                        }
-                                    }
-                                },
-                            };
-                            return ret;
+                            if !force  && repo.find_branch(local_branch_name, BranchType::Local).is_ok() {
+                                // Branch exists, but no force
+                                return Ok((false, String::from("Branch exists and no force")));
+                            }
+
+                            let output_fetch = try!(Command::new("git")
+                                .current_dir(repo.path())
+                                .arg("fetch")
+                                .arg(remote.name().unwrap())
+                                .arg(refspec)
+                                .output());
+
+                            if output_fetch.status.success() {
+                                return Ok((true, String::from("OK")));
+                            }
+
+                            return Ok((false, try!(String::from_utf8(output_fetch.stderr))));
+                        } else {
+                            return Err(GGRError::General("no revisions".into()));
                         }
+                    } else {
+                        return Err(GGRError::General("No cur_rev".into()));
                     }
+                } else {
+                    return Err(GGRError::General("no entity from commit".into()));
                 }
             }
         }
     }
 
-    Ok((false, String::from("")))
+    Err(GGRError::General("".into()))
 }
 
 /// returns basename of a project from a url (eg.: https://localhost/test -> test)
