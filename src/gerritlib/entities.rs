@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct AccountInfo {
-    pub _account_id: u64,
+    pub _account_id: Option<u64>,
     pub name: Option<String>,
     pub email: Option<String>,
     pub secondary_emails: Option<Vec<String>>,
@@ -102,11 +102,11 @@ pub struct CommitInfo {
 pub struct RevisionInfo {
     pub draft: Option<bool>,
     pub has_draft_comments: Option<bool>,
-    pub _number: u16,
-    pub created: String,
-    pub uploader: AccountInfo,
+    pub _number: u64,
+    pub created: Option<String>,
+    pub uploader: Option<AccountInfo>,
     #[serde(rename="ref")] // "ref" is a keyword
-    pub reference: String,
+    pub reference: Option<String>,
     pub fetch: HashMap<String, FetchInfo>,
     pub commit: Option<CommitInfo>,
 }
@@ -169,7 +169,7 @@ pub struct ChangeInfo {
     pub mergeable: Option<bool>,
     pub insertions: u16,
     pub deletions: u16,
-    pub _number: u16,
+    pub _number: u64,
     pub owner: AccountInfo,
     pub action: Option<Vec<ActionInfo>>,
     pub labels: Option<HashMap<String, LabelInfo>>,
