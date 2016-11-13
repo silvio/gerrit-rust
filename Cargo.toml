@@ -16,7 +16,7 @@ path = "src/bin/gerrit-rust.rs"
 doctest = true
 
 [dependencies]
-clap = "2.17"
+clap = "2.18"
 curl = "0.3"
 git2 = "0.4"
 quick-error = "1.1"
@@ -31,4 +31,4 @@ url = "1.2"
 [dependencies.rust-gron]
 version = "*"
 git = "https://github.com/silvio/rust-gron.git"
-branch = "gron-via-serde"
+branch = "gron-with-trait-for-serde-and-rustcserialize"
