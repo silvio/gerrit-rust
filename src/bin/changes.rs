@@ -82,14 +82,11 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     let fieldslist = y.is_present("fieldslist");
     let raw = y.is_present("raw");
     let human = y.is_present("human");
-    let ofields  = match y.values_of_lossy("ofields") {
-        Some(b) => b,
-        None => vec!(String::from(".*")),
-    };
+    let ofields  = y.values_of_lossy("ofields");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
 
-    let changeinfos = try!(gerrit.changes(Some(userquery.get_query()), Some(&ofields), config.get_username(), config.get_password()));
+    let changeinfos = try!(gerrit.changes(Some(userquery.get_query()), ofields, config.get_username(), config.get_password()));
 
     if raw {
         println!("{}", changeinfos.raw());
