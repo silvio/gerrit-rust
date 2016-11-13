@@ -79,8 +79,12 @@ Some design considarations here.
         `-b` its pushed to a build server. Without branchname the current
         branch is pushed.
 
-    *   [x] **0.1.7** `ggr topic pull [-f] [-b branchname] <topicname>`  
-        Pull latest version of commits for a topic. Create for all
+    *   [x] **0.1.7** <s>`ggr topic pull ...`</s>  
+        same as `ggr topic fetch`. This sub function is renamed because `fetch`
+        is more in line with git speak than `pull`.
+
+    *   [x] **0.1.8** `ggr topic fetch [-f] [-b branchname] <topicname>`  
+        fetch latest version of commits for a topic. Create for all
         changes a branch with the patch identifier as name, or with `-b` with
         a given branchname.
 

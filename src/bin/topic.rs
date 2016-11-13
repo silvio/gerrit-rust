@@ -43,8 +43,8 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .short("R")
                 )
     )
-    .subcommand(SubCommand::with_name("pull")
-                .about("Pull a topic on current and all sub repositories")
+    .subcommand(SubCommand::with_name("fetch")
+                .about("Fetch a topic on current and all sub repositories")
                 .arg(Arg::with_name("topicname")
                      .help("topic to pull")
                      .required(true)
@@ -82,7 +82,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
-        ("pull", Some(y)) => { pull(y, config) },
+        ("fetch", Some(y)) => { fetch(y, config) },
         ("checkout", Some(y)) => { checkout(y, config) },
         _ => {
             println!("{}", x.usage());
