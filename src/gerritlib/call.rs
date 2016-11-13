@@ -5,6 +5,7 @@
 
 use curl;
 use error::GGRResult;
+use error::GGRError;
 use std::cell::RefCell;
 use std::cell::RefMut;
 use std::fmt;
@@ -129,6 +130,9 @@ impl<'a> CallRequest<'a> {
         let mut out: Vec<u8> = Vec::new();
         let mut rv = try!(self.send_into(&mut out));
 
+        // TODO: log this with a logging facility
+        // println!("return-from-server: {:?}", rv);
+
         /* cut first 4 bytes from output stream */
         if out.starts_with(b")]}'") {
             out = out[4..].into();
@@ -181,7 +185,6 @@ impl Call {
         let mut handle = self.handle.borrow_mut();
 
         if self.username.is_some() && self.password.is_some() {
-            try!(handle.http_auth(curl::easy::Auth::new().digest(true)));
             try!(handle.cookie_session(true));
             try!(handle.username(&self.username.clone().unwrap()));
             try!(handle.password(&self.password.clone().unwrap()));
@@ -209,8 +212,24 @@ impl Call {
         sendurl.set_path(&path);
         sendurl.set_query(Some(querystring));
 
-        let e = try!(self.request(CallMethod::Get, sendurl.into_string()));
+        // TODO: log this with a logging facility
+        //println!("url: {:?}", sendurl);
 
-        e.send()
+        for am in vec!(
+            curl::easy::Auth::new().digest(true),
+            curl::easy::Auth::new().basic(true)
+        ) {
+            let mut call_request = try!(self.request(CallMethod::Get, sendurl.to_owned().into_string()));
+            try!(call_request.handle.http_auth(am));
+
+            let call_response = try!(call_request.send());
+            if call_response.status == 401 {
+                continue;
+            }
+
+            return Ok(call_response);
+        }
+
+        Err(GGRError::General("No Authentication algorithm found for your gerrit server. 'basic' and 'digest' tested".into()))
     }
 }
