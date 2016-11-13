@@ -60,7 +60,7 @@ impl From<String> for KeyValue {
             val: String::new(),
         };
 
-        let re = regex::Regex::new(r"^\[(?P<id>\di*?)].(?P<key>.*)=(?P<val>.*)$").unwrap();
+        let re = regex::Regex::new(r"^\[(?P<id>\d*?)].(?P<key>.*)=(?P<val>.*)$").unwrap();
         for cap in re.captures_iter(&s) {
             out.id = cap.name("id").unwrap_or("").trim().into();
             out.key = cap.name("key").unwrap_or("").trim().into();
@@ -238,6 +238,7 @@ impl ChangeInfos {
             Ok(decode) => { Ok(decode) },
             Err(r) => {
                 println!("decode error: {}", r);
+                println!("json:\n{}", json);
                 Err(GGRError::from(r))
             },
         }
