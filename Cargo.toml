@@ -1,6 +1,6 @@
 [package]
 name = "gerrit-rust"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
 license = "MPL-2.0"
 repository = "https://github.com/silvio/gerrit-rust"
@@ -27,8 +27,4 @@ serde_json = "0.8"
 serde_derive = "0.8"
 toml-config = "0.4"
 url = "1.2"
-
-[dependencies.rust-gron]
-version = "*"
-git = "https://github.com/silvio/rust-gron.git"
-branch = "gron-with-trait-for-serde-and-rustcserialize"
+gron = "0.2"
