@@ -182,6 +182,7 @@ impl Call {
 
         if self.username.is_some() && self.password.is_some() {
             try!(handle.http_auth(curl::easy::Auth::new().digest(true)));
+            try!(handle.cookie_session(true));
             try!(handle.username(&self.username.clone().unwrap()));
             try!(handle.password(&self.password.clone().unwrap()));
         }
