@@ -199,7 +199,7 @@ impl Call {
         let mut sendurl = self.url.clone();
 
         let mut path = if self.username.is_some() || self.password.is_some() {
-            format!("/a/{}", path)
+            format!("{}/a/{}", sendurl.path().to_string(), path)
         } else {
             path.to_string()
         };
