@@ -62,6 +62,14 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .long("force")
                 )
     )
+    .subcommand(SubCommand::with_name("checkout")
+                .about("Checkout a branch on current and all sub repositories")
+                .arg(Arg::with_name("branchname")
+                     .help("local branch to checkout")
+                     .required(true)
+                     .takes_value(true)
+                )
+    )
 }
 /// manage subfunction of `topic` command
 ///
@@ -75,6 +83,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
         ("pull", Some(y)) => { pull(y, config) },
+        ("checkout", Some(y)) => { checkout(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -203,10 +212,10 @@ fn test_split_repo_reference() {
     assert_eq!(split_repo_reference("a:b:c"), ("a".to_string(),"b".to_string()));
 }
 
-/// pull topics
-fn pull(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+/// fetch topics
+fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     if !config.is_root() {
-        return Err(GGRError::General("You have to run topic::pull on the main/root repository".into()));
+        return Err(GGRError::General("You have to run topic::fetch on the main/root repository".into()));
     }
 
     let topicname = y.value_of("topicname").expect("no or bad topicname");
@@ -215,5 +224,17 @@ fn pull(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 
     let mut gerrit = Gerrit::new(config.get_base_url());
     gerrit.fetch_topic(topicname, local_branch_name, force, config.get_username(), config.get_password())
+}
+
+/// checkout topics
+fn checkout(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+    if !config.is_root() {
+        return Err(GGRError::General("You have to run topic::checkout on the main/root repository".into()));
+    }
+
+    let branchname = y.value_of("branchname").unwrap();
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+    gerrit.checkout_topic(branchname)
 }
 

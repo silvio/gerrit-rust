@@ -69,8 +69,10 @@ Some design considarations here.
         List all development branches and the repositories. With `-s` it
         includes the commits in the branch like `git submodule summary`.
 
-    *   [ ] `ggr topic checkout <BRANCHNAME>`  
+    *   [x] **0.1.8** `ggr topic checkout <BRANCHNAME>`  
         Checkout a branch on all repositories.
+        *   [x] **0.1.8** first check base folder if checkout happened sync all
+            submodules than checkout changes for topic on subfolders
 
     *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
         Push changes to gerrit. Without `-b` its pushed to gerrit. With option

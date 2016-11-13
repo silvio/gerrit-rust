@@ -59,6 +59,39 @@ impl Gerrit {
         changes::Changes::query_changes(&self.call, &querystring)
     }
 
+    pub fn checkout_topic(&mut self, branchname: &str) -> GGRResult<()> {
+            if let Ok(main_repo) = Repository::open(".") {
+                print!("checkout {} at {} ...", branchname, main_repo.workdir().unwrap().to_string_lossy());
+                match checkout_repo(&main_repo, branchname) {
+                    Ok(_) => {
+                        println!("OK\ngit submodule update ...");
+                        let output_submodule_update = Command::new("git")
+                            .arg("submodule")
+                            .arg("update")
+                            .arg("--recursive")
+                            .arg("--init")
+                            .output()?;
+                        println!("  submodule update stdout:\n{}", String::from_utf8_lossy(&output_submodule_update.stdout));
+                        println!("  submodule update stderr:\n{}", String::from_utf8_lossy(&output_submodule_update.stderr));
+                    },
+                    Err(m) => println!("KO, Error: {}", m.to_string().trim()),
+                }
+
+                if let Ok(smodules) = main_repo.submodules() {
+                    for smodule in smodules {
+                        if let Ok(sub_repo) = smodule.open() {
+                            print!("checkout {} at {} ...", branchname, sub_repo.workdir().unwrap().to_string_lossy());
+                            match checkout_repo(&sub_repo, branchname) {
+                                Ok(_) => println!("OK"),
+                                Err(m) => println!("KO, Error: {}", m.to_string().trim()),
+                            }
+                        }
+                    }
+                }
+            }
+        Ok(())
+    }
+
     /// fetch topic `topicname` to branch `local_branch_name`.
     ///
     /// If branch exists and `force` is true, the branch is moving to new position.
@@ -77,7 +110,6 @@ impl Gerrit {
                 match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip) {
                     Ok((true,m)) => {
                         println!("{}", m);
-
                         continue;
                     },
                     Ok((false, m)) => {
@@ -99,7 +131,6 @@ impl Gerrit {
                             match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip) {
                                 Ok((true, m)) => {
                                     println!("{}", m);
-
                                     continue 'next_ptip;
                                 },
                                 Ok((false, m)) => {
