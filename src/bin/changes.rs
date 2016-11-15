@@ -111,7 +111,7 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
         }
         println!("{} -> {}", count, printout);
     } else {
-        println!("{}", changeinfos.as_string_reg(&regsel));
+        println!("{}", changeinfos.as_string_reg(&regsel).trim());
     }
 
     Ok(())
