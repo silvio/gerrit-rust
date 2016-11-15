@@ -71,6 +71,16 @@ impl From<String> for KeyValue {
     }
 }
 
+impl KeyValue {
+    pub fn is_empty(&self) -> bool {
+        if self.id.is_empty() || self.key.is_empty() {
+            return true;
+        }
+
+        return false;
+    }
+}
+
 #[derive(Default, Debug)]
 pub struct ChangeInfos {
     pub json: Option<serde_json::value::Value>,
@@ -177,7 +187,9 @@ impl ChangeInfos {
             for s in selector {
                 if let Ok(re) = regex::Regex::new(s) {
                     if re.is_match(&kv.key) {
-                        out.push_str(&format!("{}.{} {}\n", kv.id, kv.key, kv.val));
+                        if !kv.is_empty() {
+                            out.push_str(&format!("{}.{} {}\n", kv.id, kv.key, kv.val));
+                        }
                         continue 'next_kv;
                     }
                 }
