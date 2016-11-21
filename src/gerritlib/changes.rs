@@ -77,7 +77,7 @@ impl KeyValue {
             return true;
         }
 
-        return false;
+        false
     }
 }
 

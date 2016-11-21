@@ -198,7 +198,7 @@ fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, lo
                 if let Ok(entity) = ci.entity_from_commit(p_tip) {
                     if let Some(ref cur_rev) = entity.current_revision {
                         if let Some(ref revisions) = entity.revisions {
-                            let reference = &revisions.get(cur_rev).unwrap().fetch.get("http").unwrap().reference;
+                            let reference = &revisions[cur_rev].fetch["http"].reference;
                             let force_string = if force {"+"} else { "" };
                             let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
 
