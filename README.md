@@ -18,17 +18,16 @@ Some design considarations here.
 *   [x] **0.1.5** Use of curl-rs as http client
 *   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
-    *   `baseurl`: base url with schema (http)
-    *   `port`: used port
-    *   `appendix`: for gerrit server under a subpath (not tested)
+    *   `api`: base url with schema (http)
     *   [x] **0.1.3** User authentication, without `username` and/or `password`
         we use the anonymous backend of gerrit
         *   `username`: username for login
         *   `password`: password for login
     *   `root`: true if this is the uppermost project of all repositories
         underneath
-    *   [ ] Authentication (e.g.: digest, basic)
-        *   [x] only `digest` hardcoded supported
+    *   [x] Authentication (e.g.: digest, basic)
+        *   [x] `digest` and `basic` are supported. Current implementation
+            calls both. First on is `basic` and second one is `digest`.
 
     *   Consider to configure via config file or put all settings into
         as entries in `.git/config`.  
@@ -94,6 +93,13 @@ Some design considarations here.
         MAIL`. Config lineentries start with ggr-\[cc/to/re\]. Without any
         options the current reviewer/to/cc showed for current branch. Without
         BRANCHNAME te current branch is taken.
+
+    *   [ ] `ggr topic verify [<TOPICNAME>] <LABEL> [<MESSAGE>]`
+        Verify all commits of a topic TOPICNAME with a label LABEL
+        (-2|-1|0|+1|+2|=) and a optional message. Be aware the messages is
+        appended as note on ALL commits in this topic.
+        *   [ ] Label `=` means not changing the current review label value,
+            only a append a message
 
 *   Other Ideas
 
