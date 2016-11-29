@@ -130,8 +130,7 @@ impl<'a> CallRequest<'a> {
         let mut out: Vec<u8> = Vec::new();
         let mut rv = try!(self.send_into(&mut out));
 
-        // TODO: log this with a logging facility
-        // println!("return-from-server: {:?}", rv);
+        debug!("return-from-server: {:?}", rv);
 
         /* cut first 4 bytes from output stream */
         if out.starts_with(b")]}'") {
@@ -212,8 +211,7 @@ impl Call {
         sendurl.set_path(&path);
         sendurl.set_query(Some(querystring));
 
-        // TODO: log this with a logging facility
-        //println!("url: {:?}", sendurl);
+        debug!("url-to-send: {:?}", sendurl);
 
         for am in vec!(
             curl::easy::Auth::new().digest(true),

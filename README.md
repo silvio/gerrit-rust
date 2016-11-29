@@ -97,8 +97,8 @@ Some design considarations here.
 
 *   Other Ideas
 
-    *   [ ] implement a log mechanism to get debugging information via loglevel
-        switch
+    *   [x] **0.1.9** implement a log mechanism to get debugging information
+        via loglevel switch
 
     *   [x] **0.1.0** `ggr changes query <QUERY>`
         query a searchstring to gerrit server. Use as `QUERY` the same syntax

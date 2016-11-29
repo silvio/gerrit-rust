@@ -16,10 +16,13 @@ path = "src/bin/gerrit-rust.rs"
 doctest = true
 
 [dependencies]
+chrono = "0.2"
 clap = "2.18"
 curl = "0.3"
 git2 = "0.4"
 gron = "0.2"
+log = "0.3"
+env_logger = "0.3"
 quick-error = "1.1"
 regex = "0.1"
 rustc-serialize = "0.3"

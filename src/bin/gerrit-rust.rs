@@ -1,9 +1,13 @@
 
 //! main entry for `gerrit-rust`
 
+extern crate chrono;
 extern crate clap;
+extern crate env_logger;
 extern crate gerritlib;
 extern crate git2;
+#[macro_use]
+extern crate log;
 extern crate rustc_serialize;
 extern crate toml_config;
 
@@ -15,7 +19,27 @@ use clap::App;
 use gerritlib::error::GGRError;
 use std::error::Error;
 
+fn init_log() {
+    let format = |record: &log::LogRecord| {
+        format!("[{:5.5}] [{}] [{}] - {}", record.level(),
+                chrono::Local::now().to_rfc3339(),
+                record.location().module_path(),
+                record.args())
+    };
+
+    let mut builder = env_logger::LogBuilder::new();
+    builder.format(format).filter(None, log::LogLevelFilter::Info);
+
+    if let Ok(ref rl) = std::env::var("RUST_LOG") {
+        builder.parse(rl);
+    }
+
+    let _ = builder.init();
+}
+
 fn main() {
+    init_log();
+
     let mut app = App::new("gerrit-rust")
         .author("Silvio Fricke <silvio.fricke@gmail.com>")
         .about("some gerrit tools")

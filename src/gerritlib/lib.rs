@@ -9,6 +9,9 @@
 #[macro_use]
 extern crate quick_error;
 
+#[macro_use]
+extern crate log;
+
 extern crate curl;
 extern crate git2;
 extern crate regex;
