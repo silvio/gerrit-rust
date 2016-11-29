@@ -17,7 +17,7 @@ doctest = true
 
 [dependencies]
 chrono = "0.2"
-clap = "2.18"
+clap = "2.19"
 curl = "0.3"
 git2 = "0.4"
 gron = "0.2"
