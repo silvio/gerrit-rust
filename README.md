@@ -45,6 +45,9 @@ Some design considarations here.
         *   [ ] `ggr config generate --base <...> ...`: generates
             a `.ggr.config` file
 
+    *   Use `$HOME/.netrc` file. To get username and password or completly via
+        curl interface.
+
 *   manage of topics over more than one repository (git submodules like)
 
     *   [x] **0.1.0** `ggr topic create <BRANCHNAME> [-r sub:rev]`  
