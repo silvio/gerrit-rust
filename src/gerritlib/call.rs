@@ -1,7 +1,4 @@
 //! Handle http requests
-//!
-//! The http request is handled via external `curl`-command. `curl-rust` has no digest
-//! authorization implemented currently. <https://github.com/alexcrichton/curl-rust/issues/120>
 
 use curl;
 use error::GGRResult;
