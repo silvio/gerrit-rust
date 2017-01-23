@@ -3,7 +3,6 @@
 
 #![feature(custom_derive)]
 #![feature(plugin)]
-#![feature(custom_attribute)]
 #![feature(proc_macro)]
 
 #[macro_use]
