@@ -7,6 +7,7 @@ use error::GGRResult;
 use error::GGRError;
 use git2::Repository;
 use git2::BranchType;
+use std::io::{self, Write};
 use std::process::Command;
 
 
@@ -61,31 +62,68 @@ impl Gerrit {
 
     pub fn checkout_topic(&mut self, branchname: &str) -> GGRResult<()> {
             if let Ok(main_repo) = Repository::open(".") {
-                print!("checkout {} at {} ...", branchname, main_repo.workdir().unwrap().to_string_lossy());
+                let mut out_ok: Vec<String> = Vec::new();
+                let mut out_ko: Vec<String> = Vec::new();
+
+                println!("try checkout on main repo ... ");
                 match checkout_repo(&main_repo, branchname) {
                     Ok(_) => {
-                        println!("OK\ngit submodule update ...");
+                        let mut base = String::new();
+
+                        base.push_str("OK\ngit submodule update ...");
                         let output_submodule_update = Command::new("git")
                             .arg("submodule")
                             .arg("update")
                             .arg("--recursive")
                             .arg("--init")
                             .output()?;
-                        println!("  submodule update stdout:\n{}", String::from_utf8_lossy(&output_submodule_update.stdout));
-                        println!("  submodule update stderr:\n{}", String::from_utf8_lossy(&output_submodule_update.stderr));
+
+                        if output_submodule_update.stdout.is_empty() {
+                            base.push_str(&format!("  submodule update stdout:\n{}", String::from_utf8_lossy(&output_submodule_update.stdout)));
+                        }
+                        if output_submodule_update.stderr.is_empty() {
+                            base.push_str(&format!("  submodule update stderr:\n{}", String::from_utf8_lossy(&output_submodule_update.stderr)));
+                        }
+                        out_ok.push(base);
                     },
-                    Err(m) => println!("KO, Error: {}", m.to_string().trim()),
+                    Err(m) => out_ko.push(format!("{} -> {}", main_repo.path().to_str().unwrap(), m.to_string().trim())),
                 }
 
+                println!();
+
                 if let Ok(smodules) = main_repo.submodules() {
+                    print!("try checkout on submodules ");
                     for smodule in smodules {
                         if let Ok(sub_repo) = smodule.open() {
-                            print!("checkout {} at {} ...", branchname, sub_repo.workdir().unwrap().to_string_lossy());
                             match checkout_repo(&sub_repo, branchname) {
-                                Ok(_) => println!("OK"),
-                                Err(m) => println!("KO, Error: {}", m.to_string().trim()),
-                            }
+                                Ok(_) => {
+                                    print!("+");
+                                    out_ok.push(format!("{:?}", smodule.name().unwrap_or("unknown repository")))
+                                },
+                                Err(m) => {
+                                    print!("-");
+                                    out_ko.push(format!("{:?} -> {}", smodule.name().unwrap_or("unknown repository"), m.to_string().trim()))
+                                },
+                            };
+                            let _ = io::stdout().flush();
                         }
+                    }
+                    println!("\n");
+
+                    if !out_ko.is_empty() {
+                        println!("Not possible to checkout '{}' on this repositories:", branchname);
+                        for entry in out_ko {
+                            println!("* {}", entry);
+                        }
+                    }
+
+                    if !out_ok.is_empty() {
+                        println!("\nSuccessfull checkout of '{}' on this repositories:", branchname);
+                        for entry in out_ok {
+                            println!("* {}", entry);
+                        }
+                    } else {
+                        println!("No checkout happened");
                     }
                 }
             }
