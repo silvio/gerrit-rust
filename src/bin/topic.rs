@@ -61,6 +61,11 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .short("f")
                      .long("force")
                 )
+                .arg(Arg::with_name("track")
+                     .help("Set tracking branch for newly created local branches (or all branches with --force)")
+                     .long("track")
+                     .takes_value(true)
+                 )
     )
     .subcommand(SubCommand::with_name("checkout")
                 .about("Checkout a branch on current and all sub repositories")
@@ -71,6 +76,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                 )
     )
 }
+
 /// manage subfunction of `topic` command
 ///
 /// Currently implemented sub commands:
@@ -221,9 +227,10 @@ fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     let topicname = y.value_of("topicname").expect("no or bad topicname");
     let force = y.is_present("force");
     let local_branch_name = y.value_of("branchname").unwrap_or(topicname);
+    let tracking_branch_name = y.value_of("track");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
-    gerrit.fetch_topic(topicname, local_branch_name, force, config.get_username(), config.get_password())
+    gerrit.fetch_topic(topicname, local_branch_name, force, config.get_username(), config.get_password(), tracking_branch_name)
 }
 
 /// checkout topics

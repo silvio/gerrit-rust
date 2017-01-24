@@ -89,6 +89,7 @@ Some design considarations here.
         fetch latest version of commits for a topic. Create for all
         changes a branch with the patch identifier as name, or with `-b` with
         a given branchname.
+        [x] **0.1.9** Add tracking information via `--track <branch>` option.
 
     *   [ ] `ggr topic reviewer [<BRANCHNAME>] [-r <MAIL>] [-c <MAIL>] [-t <MAIL>]`  
         Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time. The

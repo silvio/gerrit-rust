@@ -95,7 +95,7 @@ impl Gerrit {
     /// fetch topic `topicname` to branch `local_branch_name`.
     ///
     /// If branch exists and `force` is true, the branch is moving to new position.
-    pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, username: &str, password: &str) -> GGRResult<()> {
+    pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, username: &str, password: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
         let ofields: Vec<String> = vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into());
 
         let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(ofields), username, password));
@@ -107,7 +107,7 @@ impl Gerrit {
             // check for root repository
             if let Ok(main_repo) = Repository::open(".") {
                 // check changes on root repository
-                match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip) {
+                match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
                     Ok((true,m)) => {
                         println!("{}", m);
                         continue;
@@ -128,7 +128,7 @@ impl Gerrit {
                 if let Ok(smodules) = main_repo.submodules() {
                     for smodule in smodules {
                         if let Ok(sub_repo) = smodule.open() {
-                            match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip) {
+                            match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
                                 Ok((true, m)) => {
                                     println!("{}", m);
                                     continue 'next_ptip;
@@ -182,7 +182,7 @@ fn checkout_repo(repo: &Repository, branchname: &str) -> GGRResult<()> {
 ///
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
 /// is a status message.
-fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, local_branch_name: &str, p_name: &str, p_tip: &str) -> GGRResult<(bool, String)> {
+fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
     if repo.is_bare() {
         return Err(GGRError::General(format!("repository path '{:?}' is bare, we need a workdir", repo.path())));
     }
@@ -207,7 +207,7 @@ fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, lo
                                 return Ok((false, String::from("Branch exists and no force")));
                             }
 
-                            let output_fetch = try!(Command::new("git")
+                            let mut output_fetch = try!(Command::new("git")
                                 .current_dir(repo.path())
                                 .arg("fetch")
                                 .arg(remote.name().unwrap())
@@ -215,7 +215,25 @@ fn fetch_from_repo(repo: &Repository, ci: &changes::ChangeInfos, force: bool, lo
                                 .output());
 
                             if output_fetch.status.success() {
-                                return Ok((true, String::from("OK")));
+                                if let Some(tracking_branch) = tracking_branch_name {
+                                    let mut output_tracking = try!(Command::new("git")
+                                         .current_dir(repo.path())
+                                         .arg("branch")
+                                         .arg("--set-upstream-to")
+                                         .arg(tracking_branch)
+                                         .arg(local_branch_name)
+                                         .output());
+                                    if !output_tracking.stdout.is_empty() {
+                                        output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
+                                        output_fetch.stdout.append(&mut output_tracking.stdout);
+                                    }
+                                    if !output_tracking.stderr.is_empty() {
+                                        output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
+                                        output_fetch.stdout.append(&mut output_tracking.stderr);
+                                    }
+                                }
+
+                                return Ok((true, try!(String::from_utf8(output_fetch.stdout))));
                             }
 
                             return Ok((false, try!(String::from_utf8(output_fetch.stderr))));
