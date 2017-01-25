@@ -2,12 +2,11 @@
 use call;
 use error::GGRError;
 use error::GGRResult;
-use gron;
+use gron::ToGron;
 use serde_json;
 use regex;
 use std::collections::HashMap;
 use entities;
-
 
 pub struct Changes { }
 
@@ -43,44 +42,6 @@ impl Changes {
     }
 }
 
-/// Abstraction for Gron format into a Key/Val storage tyupe
-#[derive(Debug)]
-pub struct KeyValue {
-    pub id: String,
-    pub key: String,
-    pub val: String,
-}
-
-impl From<String> for KeyValue {
-    /// splits a string of 'a=b' style to `KeyValue { sel:"a", val:"b" }`
-    fn from(s: String) -> Self {
-        let mut out: KeyValue = KeyValue {
-            id: String::new(),
-            key: String::new(),
-            val: String::new(),
-        };
-
-        let re = regex::Regex::new(r"^\[(?P<id>\d*?)].(?P<key>.*)=(?P<val>.*)$").unwrap();
-        for cap in re.captures_iter(&s) {
-            out.id = cap.name("id").unwrap_or("").trim().into();
-            out.key = cap.name("key").unwrap_or("").trim().into();
-            out.val = cap.name("val").unwrap_or("").trim().into();
-        }
-
-        out
-    }
-}
-
-impl KeyValue {
-    pub fn is_empty(&self) -> bool {
-        if self.id.is_empty() || self.key.is_empty() {
-            return true;
-        }
-
-        false
-    }
-}
-
 #[derive(Default, Debug)]
 pub struct ChangeInfos {
     pub json: Option<serde_json::value::Value>,
@@ -108,54 +69,6 @@ impl ChangeInfos {
         }
     }
 
-    /// returns the self.json as a array of KeyValue objects
-    ///
-    /// The returned array is filtered through `filter_key`, `filter_val` function
-    pub fn as_keyval_array(&self) -> Vec<KeyValue> {
-        let mut out = Vec::new();
-        if let Some(json) = self.json.clone() {
-            let mut vec = Vec::new();
-
-            if let Err(x) = gron::json_to_gron(&mut vec, "", &json) {
-                println!("error: {}", x);
-                return Vec::new();
-            };
-
-            for line in vec.split(|x| *x == b'\n') {
-                let kv = KeyValue::from(String::from_utf8_lossy(line).to_string());
-                out.push(kv);
-
-                // key filter
-                /*
-                for r in &self.filter_key {
-                    if let Ok(re) = regex::Regex::new(r) {
-                        if re.is_match(&kv.key) {
-                            matched = true;
-                            break;
-                        }
-                    }
-                }
-
-                // val filter
-                for r in &self.filter_val {
-                    if let Ok(re) = regex::Regex::new(r) {
-                        if re.is_match(&kv.val) {
-                            matched = true;
-                            break;
-                        }
-                    }
-                }
-
-                if matched {
-                */
-                /*
-                }
-                */
-            }
-        }
-        out
-    }
-
     /// add a regular expression filter for keys
     ///
     /// The filter needs to be resetted through `filter_reset`.
@@ -179,18 +92,22 @@ impl ChangeInfos {
         self
     }
 
-    pub fn as_string_reg(&self, selector: &[String]) -> String {
-        let vec = self.as_keyval_array();
+    pub fn as_string_reg(&self, selectors: &[String]) -> String {
+        let json = self.json.clone();
+
+        let mut grondata: Vec<u8> = Vec::new();
+        let _ = json.unwrap().to_gron(&mut grondata, "");
         let mut out = String::from("");
 
-        'next_kv: for kv in vec {
-            for s in selector {
-                if let Ok(re) = regex::Regex::new(s) {
-                    if re.is_match(&kv.key) {
-                        if !kv.is_empty() {
-                            out.push_str(&format!("{}.{} {}\n", kv.id, kv.key, kv.val));
-                        }
-                        continue 'next_kv;
+        for line in String::from_utf8(grondata).unwrap_or(String::new()).lines() {
+            let mut keyval = line.splitn(2, "=");
+            let key = keyval.next().unwrap_or("").trim();
+            let val = keyval.next().unwrap_or("").trim();
+
+            for selector in selectors {
+                if let Ok(re) = regex::Regex::new(selector) {
+                    if re.is_match(&key) {
+                        out.push_str(&format!("{} {}\n", key, val));
                     }
                 }
             }
