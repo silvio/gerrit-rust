@@ -230,7 +230,7 @@ fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     let tracking_branch_name = y.value_of("track");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
-    gerrit.fetch_topic(topicname, local_branch_name, force, config.get_username(), config.get_password(), tracking_branch_name)
+    gerrit.fetch_topic(topicname, local_branch_name, force, tracking_branch_name)
 }
 
 /// checkout topics

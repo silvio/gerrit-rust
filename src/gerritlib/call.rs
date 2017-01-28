@@ -155,8 +155,6 @@ pub struct CallResponse {
 pub struct Call {
     url: url::Url,
     handle: RefCell<curl::easy::Easy>,
-    username: Option<String>,
-    password: Option<String>,
 }
 
 impl Call {
@@ -165,27 +163,15 @@ impl Call {
         Call {
             url: url::Url::parse(&url).unwrap(),
             handle: RefCell::new(curl::easy::Easy::new()),
-            username: None,
-            password: None,
         }
-    }
-
-    pub fn set_credentials<S>(&mut self, username: S, password: S)
-    where S: Into<String> {
-        self.username = Some(username.into());
-        self.password = Some(password.into());
     }
 
     /// Creates a `CallRequest` object with a specific HTTP method and the complete url
     fn request(&self, method:CallMethod, url:String) -> GGRResult<CallRequest> {
         let mut handle = self.handle.borrow_mut();
 
-        if self.username.is_some() && self.password.is_some() {
-            try!(handle.cookie_session(true));
-            try!(handle.username(&self.username.clone().unwrap()));
-            try!(handle.password(&self.password.clone().unwrap()));
-        }
-
+        try!(handle.cookie_session(true));
+        try!(handle.netrc(curl::easy::NetRc::Required));
 
         CallRequest::new(handle, method, url)
     }
@@ -197,11 +183,7 @@ impl Call {
     pub fn get(&self, path: &str, querystring: &str) -> GGRResult<CallResponse> {
         let mut sendurl = self.url.clone();
 
-        let mut path = if self.username.is_some() || self.password.is_some() {
-            format!("{}/a/{}", sendurl.path().to_string(), path)
-        } else {
-            path.to_string()
-        };
+        let mut path = format!("{}/a/{}", sendurl.path().to_string(), path);
 
         path = path.replace("//", "/");
 

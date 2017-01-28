@@ -19,10 +19,11 @@ Some design considarations here.
 *   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
     *   `api`: base url with schema (http)
-    *   [x] **0.1.3** User authentication, without `username` and/or `password`
-        we use the anonymous backend of gerrit
+    *   [x] **0.1.3** User authentication (**deprecated since 0.1.9**)
         *   `username`: username for login
         *   `password`: password for login
+        [x] **0.1.9** only `.netrc` settings are respected for username and
+            password. u/p in config file are ignored
     *   `root`: true if this is the uppermost project of all repositories
         underneath
     *   [x] Authentication (e.g.: digest, basic)
@@ -45,8 +46,7 @@ Some design considarations here.
         *   [ ] `ggr config generate --base <...> ...`: generates
             a `.ggr.config` file
 
-    *   Use `$HOME/.netrc` file. To get username and password or completly via
-        curl interface.
+    *   [x] **0.1.9** Use `$HOME/.netrc` file to get username and password.
 
 *   manage of topics over more than one repository (git submodules like)
 

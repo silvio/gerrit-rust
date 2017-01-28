@@ -86,7 +86,7 @@ fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 
     let mut gerrit = Gerrit::new(config.get_base_url());
 
-    let changeinfos = try!(gerrit.changes(Some(userquery.get_query()), ofields, config.get_username(), config.get_password()));
+    let changeinfos = try!(gerrit.changes(Some(userquery.get_query()), ofields));
 
     if raw {
         println!("{}", changeinfos.raw());

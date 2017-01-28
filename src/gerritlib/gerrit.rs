@@ -33,7 +33,7 @@ impl Gerrit {
     ///
     /// `querylist` is used as filter for the call to gerrit. `additional_infos` gives some more
     /// information of one Change entity.
-    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>, username: &str, password: &str)
+    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>)
         -> GGRResult<changes::ChangeInfos>
     {
         let mut querystring = "pp=0&q=".to_string();
@@ -51,10 +51,6 @@ impl Gerrit {
                     querystring = format!("{}&o={}", querystring, label);
                 }
             }
-        }
-
-        if !username.is_empty() && !password.is_empty() {
-            self.call.set_credentials(username, password);
         }
 
         changes::Changes::query_changes(&self.call, &querystring)
@@ -133,10 +129,10 @@ impl Gerrit {
     /// fetch topic `topicname` to branch `local_branch_name`.
     ///
     /// If branch exists and `force` is true, the branch is moving to new position.
-    pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, username: &str, password: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
+    pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>) -> GGRResult<()> {
         let ofields: Vec<String> = vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into());
 
-        let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(ofields), username, password));
+        let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(ofields)));
         let project_tip = changeinfos.project_tip().unwrap();
 
         // try to fetch topic for main_repo and all submodules

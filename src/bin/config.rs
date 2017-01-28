@@ -49,9 +49,13 @@ pub struct Config {
     /// gerrit server endpoint (eg. https://geritserver.com:8080/gr)
     api: String,
     /// username to login
-    username: String,
+    ///
+    /// **deprecated** since 0.1.9
+    username: Option<String>,
     /// password for login
-    password: String,
+    ///
+    /// **deprecated** since 0.1.9
+    password: Option<String>,
     /// claims the repository as the topmost repository
     root: bool,
 }
@@ -60,8 +64,8 @@ impl Default for Config {
     fn default() -> Config {
         Config {
             api: "".to_owned(),
-            username: "".to_owned(),
-            password: "".to_owned(),
+            username: None,
+            password: None,
             root: true,
         }
     }
@@ -72,11 +76,7 @@ impl fmt::Display for Config {
         try!(writeln!(f, "* url ......... : {api}",
                api = self.api.clone(),
         ));
-        try!(writeln!(f, "  user/pass ... : {user} / \"{pass}\"",
-               user = self.username.clone(),
-               pass = self.password.clone(),
-        ));
-
+        try!(writeln!(f, "  user/pass ... : from .netrc file"));
         write!(f, "  root ........ : {root}", root = self.root.clone())
     }
 }
@@ -84,20 +84,18 @@ impl fmt::Display for Config {
 impl Config {
     /// Creates new Config from ConfigFile
     pub fn from_configfile(cf: ConfigFile) -> Config {
-        toml_config::ConfigFactory::load(cf.file.path().as_path())
+        let config: Config = toml_config::ConfigFactory::load(cf.file.path().as_path());
+
+        if config.username.is_some() || config.password.is_some() {
+            info!("ignoring username and password from configfile using .netrc file now");
+        }
+
+        config
     }
 
     /// Config is only functional if `api` is set.
     pub fn is_valid(&self) -> bool {
         !self.api.is_empty()
-    }
-
-    pub fn get_username(&self) -> &str {
-        &self.username
-    }
-
-    pub fn get_password(&self) -> &str {
-        &self.password
     }
 
     pub fn get_base_url(&self) -> &str {
