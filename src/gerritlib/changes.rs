@@ -100,13 +100,13 @@ impl ChangeInfos {
         let mut out = String::from("");
 
         for line in String::from_utf8(grondata).unwrap_or(String::new()).lines() {
-            let mut keyval = line.splitn(2, "=");
+            let mut keyval = line.splitn(2, '=');
             let key = keyval.next().unwrap_or("").trim();
             let val = keyval.next().unwrap_or("").trim();
 
             for selector in selectors {
                 if let Ok(re) = regex::Regex::new(selector) {
-                    if re.is_match(&key) {
+                    if re.is_match(key) {
                         out.push_str(&format!("{} {}\n", key, val));
                     }
                 }
@@ -157,7 +157,7 @@ impl ChangeInfos {
     pub fn human(&self) -> String {
         let json = self.json.clone();
 
-        serde_json::ser::to_string_pretty(&json.unwrap_or_else(|| serde_json::value::Value::String("".into()))).unwrap_or("problem with pretty printing".into())
+        serde_json::ser::to_string_pretty(&json.unwrap_or_else(|| serde_json::value::Value::String("".into()))).unwrap_or_else(|_| "problem with pretty printing".into())
     }
 
     pub fn to_entities(&self) -> GGRResult<Vec<entities::ChangeInfo>> {
