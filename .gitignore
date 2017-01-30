@@ -1,2 +1,4 @@
 target
 DOCKER-GERRIT
+misc/GERRIT
+misc/testsetup/masterproject
