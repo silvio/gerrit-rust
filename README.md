@@ -178,16 +178,16 @@ Some design considarations here.
 
 This creates a dockercontainer which is connectable via http://localhost:8080.
 The server is setup for development and all accounts can do all things.
-It generate or use a `DOCKER-FOR-GERRIT` folder with all settings, repositories
-and ssh-keys.
+It generate or use a `DOCKER-FOR-GERRIT` folder containing of settings,
+repositories and ssh-keys.
 
 ```text
-docker run --rm -it -p 0.0.0.0:8080:8080 -p 127.0.0.1:29418:29418 \
-           -e AUTH_TYPE='OpenID' \
-           -e GERRIT_PUBLIC_KEYS_PATH='/home/gerrit/ssh-keys' \
-           -v ${PWD}/DOCKER-FOR-GERRIT/ssh-keys:/home/gerrit/ssh-keys \
-           -v ${PWD}/DOCKER-FOR-GERRIT/site:/home/gerrit/site \
-           --name gerrit docker.io/fabric8/gerrit:latest
+docker run --rm -it \
+           -h localhost
+           -p 8080:8080 -p 29418:29418 \
+           -v /development/projects/DOCKER-FOR-GERRIT:/var/gerrit/review_site \
+           --name gerrit \
+           openfrontier/gerrit:latest
 ```
 
 
