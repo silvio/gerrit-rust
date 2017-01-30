@@ -7,6 +7,7 @@ rust:
 script:
   - cargo build
   - cargo build --release
+  - ./misc/testsetup.sh; true
   - cargo test
 
 addons:
