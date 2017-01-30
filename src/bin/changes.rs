@@ -25,6 +25,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .help("return optional fields information")
                      .short("o")
                      .takes_value(true)
+                     .multiple(true)
                 )
                 .arg(Arg::with_name("userquery")
                      .help("user query for changes")
