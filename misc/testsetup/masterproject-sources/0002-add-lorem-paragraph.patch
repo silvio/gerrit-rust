@@ -1,0 +1,36 @@
+From 9376ce0ef430e034497607f71643040b99c84b48 Mon Sep 17 00:00:00 2001
+Message-Id: <9376ce0ef430e034497607f71643040b99c84b48.1485772829.git.silvio.fricke@gmail.com>
+In-Reply-To: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+References: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+From: Silvio Fricke <silvio.fricke@gmail.com>
+Date: Mon, 30 Jan 2017 11:17:37 +0100
+Subject: [PATCH 2/4] add lorem paragraph
+
+Change-Id: Ia0c2c9731095bf27cd2153b796e66a7944d483dd
+Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
+---
+ lorem-ipsum.txt | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/lorem-ipsum.txt b/lorem-ipsum.txt
+index c4369e3..0c92c97 100644
+--- a/lorem-ipsum.txt
++++ b/lorem-ipsum.txt
+@@ -16,6 +16,14 @@ non consequat sapien. Proin odio nisi, aliquam sagittis ipsum eleifend,
+ malesuada interdum magna. Praesent eget neque id mi placerat pulvinar. Donec at
+ vehicula purus.
+ 
++Nam non lorem auctor, pulvinar tortor eu, laoreet risus. Nunc lobortis, erat
++maximus dapibus sodales, arcu neque consequat eros, fringilla convallis urna
++quam eu purus. Pellentesque id neque eu lacus semper dapibus vitae eu magna.
++Quisque quis posuere tortor, in pellentesque nulla. Aenean id posuere enim. In
++hac habitasse platea dictumst. Cras lacinia, nibh eu sollicitudin egestas,
++libero ex imperdiet nibh, nec luctus nulla nibh non turpis. Nunc non venenatis
++leo, ut ultrices tortor.
++
+ Phasellus in viverra augue. Proin malesuada odio at est venenatis commodo.
+ Phasellus scelerisque nisl nec magna mattis gravida. Etiam quis ligula ut augue
+ fringilla fermentum eget non metus. Curabitur dui erat, condimentum eu justo a,
+-- 
+2.11.0
+

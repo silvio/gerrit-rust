@@ -1,0 +1,68 @@
+From 1c632cc4f7c9081fb737fc4b214c1bfed9c56896 Mon Sep 17 00:00:00 2001
+Message-Id: <1c632cc4f7c9081fb737fc4b214c1bfed9c56896.1485772829.git.silvio.fricke@gmail.com>
+In-Reply-To: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+References: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+From: Silvio Fricke <silvio.fricke@gmail.com>
+Date: Mon, 30 Jan 2017 11:19:36 +0100
+Subject: [PATCH 4/4] change some lorem paragraphs
+
+Change-Id: I9934de82fc959dbcc32b14b87f6f6203041f2bf8
+Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
+---
+ lorem-ipsum.txt | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/lorem-ipsum.txt b/lorem-ipsum.txt
+index 68753d3..8bc85d8 100644
+--- a/lorem-ipsum.txt
++++ b/lorem-ipsum.txt
+@@ -9,7 +9,7 @@ Lorem Ipsum
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent eget feugiat
+ tellus. Integer vulputate sollicitudin metus, nec interdum massa suscipit a.
+ Pellentesque aliquet vestibulum ligula, sit amet laoreet odio aliquam nec.
+-Pellentesque sit amet malesuada nibh, ut sollicitudin massa. Pellentesque
++Pellentesque sit amet malesuada nibh, Ut sollicitudin massa. Pellentesque
+ iaculis eros in eros iaculis venenatis. Sed congue dictum tellus vitae
+ elementum. Praesent venenatis ligula non libero ornare dignissim. Vestibulum
+ non consequat sapien. Proin odio nisi, aliquam sagittis ipsum eleifend,
+@@ -17,29 +17,29 @@ malesuada interdum magna. Praesent eget neque id mi placerat pulvinar. Donec at
+ vehicula purus.
+ 
+ Nam non lorem auctor, pulvinar tortor eu, laoreet risus. Nunc lobortis, erat
+-maximus dapibus sodales, arcu neque consequat eros, fringilla convallis urna
++maximus dapibus sodales, arcu neque consequat eros, fringilla convallis Urna
+ quam eu purus. Pellentesque id neque eu lacus semper dapibus vitae eu magna.
+ Quisque quis posuere tortor, in pellentesque nulla. Aenean id posuere enim. In
+ hac habitasse platea dictumst. Cras lacinia, nibh eu sollicitudin egestas,
+ libero ex imperdiet nibh, nec luctus nulla nibh non turpis. Nunc non venenatis
+-leo, ut ultrices tortor.
++leo, Ut Ultrices tortor.
+ 
+ Phasellus in viverra augue. Proin malesuada odio at est venenatis commodo.
+-Phasellus scelerisque nisl nec magna mattis gravida. Etiam quis ligula ut augue
++Phasellus scelerisque nisl nec magna mattis gravida. Etiam quis ligula Ut augue
+ fringilla fermentum eget non metus. Curabitur dui erat, condimentum eu justo a,
+ elementum dignissim neque. Integer viverra finibus augue non convallis. Mauris
+ rutrum velit vulputate turpis tincidunt lobortis. Duis sit amet gravida enim,
+ ultrices luctus nibh. Maecenas aliquet auctor cursus. Ut a finibus ligula, eget
+ pharetra ex. Pellentesque accumsan id ligula ac pellentesque. Sed sapien nulla,
+-faucibus ac ultricies sit amet, vestibulum quis diam. Mauris malesuada tempus
++faucibus ac Ultricies sit amet, vestibulum quis diam. Mauris malesuada tempus
+ diam, in facilisis elit fringilla sed. Nullam tincidunt vulputate venenatis.
+-Nulla ac purus ac ante faucibus dignissim sed ut diam.
++Nulla ac purus ac ante faucibus dignissim sed Ut diam.
+ 
+ Nullam semper velit vel sapien fringilla imperdiet. Aliquam et tellus vel odio
+ sodales convallis quis vel enim. Etiam elementum enim at dui tincidunt, id
+-commodo risus ullamcorper. Suspendisse potenti. Curabitur eu fringilla ante, ac
+-placerat ipsum. Suspendisse ut rutrum libero, a pulvinar justo. Fusce vitae
+-neque nisl. Sed arcu ante, ullamcorper facilisis eros quis, scelerisque
++commodo risus Ullamcorper. Suspendisse potenti. Curabitur eu fringilla ante, ac
++placerat ipsum. Suspendisse Ut rutrum libero, a pulvinar justo. Fusce vitae
++neque nisl. Sed arcu ante, Ullamcorper facilisis eros quis, scelerisque
+ volutpat lorem. Nullam sed dui tristique nisi auctor vulputate. Sed gravida
+ vitae nibh sed pretium. Ut eleifend ex velit, sed vestibulum justo vehicula at.
+ Cras dui metus, laoreet quis dignissim id, consectetur in justo. Fusce non
+-- 
+2.11.0
+

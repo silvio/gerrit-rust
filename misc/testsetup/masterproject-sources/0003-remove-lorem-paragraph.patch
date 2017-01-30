@@ -1,0 +1,38 @@
+From b6e3530203214d1c43f872d458c7736f628aadda Mon Sep 17 00:00:00 2001
+Message-Id: <b6e3530203214d1c43f872d458c7736f628aadda.1485772829.git.silvio.fricke@gmail.com>
+In-Reply-To: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+References: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+From: Silvio Fricke <silvio.fricke@gmail.com>
+Date: Mon, 30 Jan 2017 11:18:17 +0100
+Subject: [PATCH 3/4] remove lorem paragraph
+
+Change-Id: Id177b0077e6900d9846df6217d011587ea889173
+Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
+---
+ lorem-ipsum.txt | 13 -------------
+ 1 file changed, 13 deletions(-)
+
+diff --git a/lorem-ipsum.txt b/lorem-ipsum.txt
+index 0c92c97..68753d3 100644
+--- a/lorem-ipsum.txt
++++ b/lorem-ipsum.txt
+@@ -51,16 +51,3 @@ finibus felis in facilisis sagittis. Aenean sollicitudin elementum euismod.
+ Nunc non eros gravida, posuere justo sed, sollicitudin sem. Aliquam auctor mi
+ quis elit ornare, eget posuere diam lacinia. Duis mollis vehicula diam a
+ egestas.
+-
+-Sed nisl arcu, congue eget dui eget, maximus porta elit. Nullam vestibulum,
+-sapien eget dictum rhoncus, lorem dolor pulvinar libero, vel pulvinar ipsum
+-libero vitae ante. Suspendisse sem ipsum, rhoncus ut nulla sed, convallis
+-interdum eros. Class aptent taciti sociosqu ad litora torquent per conubia
+-nostra, per inceptos himenaeos. Mauris sagittis vitae justo tincidunt tempor.
+-Quisque suscipit risus nisl, eu luctus magna dictum id. Nulla ac aliquet
+-lectus. Quisque a orci id lacus aliquam efficitur. Vivamus non tristique nisi,
+-sit amet pharetra eros. Proin aliquet nunc eget mi porta ultrices. Praesent ac
+-turpis eu turpis viverra gravida ac ac leo. Suspendisse auctor sagittis magna,
+-et tincidunt metus porttitor id. Fusce efficitur nibh non nisi malesuada,
+-laoreet vehicula ligula gravida. Lorem ipsum dolor sit amet, consectetur
+-adipiscing elit.
+-- 
+2.11.0
+

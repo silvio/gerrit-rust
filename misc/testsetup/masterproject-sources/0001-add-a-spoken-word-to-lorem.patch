@@ -1,0 +1,31 @@
+From 9a991d7c896b3354df5b94e0a1ac832a6fdf18ae Mon Sep 17 00:00:00 2001
+Message-Id: <9a991d7c896b3354df5b94e0a1ac832a6fdf18ae.1485772829.git.silvio.fricke@gmail.com>
+From: Silvio Fricke <silvio.fricke@gmail.com>
+Date: Mon, 30 Jan 2017 11:16:49 +0100
+Subject: [PATCH 1/4] add a spoken word to lorem
+
+Change-Id: Ifc2b0a139e49531a0d0d91bc8c4369b5317b9183
+Signed-off-by: Silvio Fricke <silvio.fricke@gmail.com>
+---
+ lorem-ipsum.txt | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/lorem-ipsum.txt b/lorem-ipsum.txt
+index 98bf841..c4369e3 100644
+--- a/lorem-ipsum.txt
++++ b/lorem-ipsum.txt
+@@ -1,6 +1,11 @@
+ Lorem Ipsum
+ ===========
+ 
++    Neque porro quisquam est qui dolorem ipsum quia dolor sit amet,
++    consectetur, adipisci velit...
++    (There is no one who loves pain itself, who seeks after it and wants to
++    have it, simply because it is pain...)
++
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent eget feugiat
+ tellus. Integer vulputate sollicitudin metus, nec interdum massa suscipit a.
+ Pellentesque aliquet vestibulum ligula, sit amet laoreet odio aliquam nec.
+-- 
+2.11.0
+
