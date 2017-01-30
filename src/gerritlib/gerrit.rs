@@ -1,7 +1,6 @@
 
 //! Implements the gerrit structure
 
-use call::Call;
 use changes;
 use error::GGRResult;
 use error::GGRError;
@@ -9,11 +8,18 @@ use git2::Repository;
 use git2::BranchType;
 use std::io::{self, Write};
 use std::process::Command;
+use url;
+
+/// Interface for Gerrit access.
+pub trait GerritAccess {
+    /// Returns the (path, query) information
+    fn build_url(&self) -> (String, String);
+}
 
 
 /// `Gerrit` structure for management of several gerrit endpoints
 pub struct Gerrit {
-    call: Call,
+    url: url::Url,
 }
 
 impl Gerrit {
@@ -25,37 +31,26 @@ impl Gerrit {
     pub fn new<S>(url: S) -> Gerrit
     where S: Into<String> {
         Gerrit {
-            call: Call::new(url.into()),
+            url: url::Url::parse(&url.into()).unwrap(),
         }
     }
 
-    /// query changes from gerrit server
+    /// Convenient function to query changes from gerrit server
     ///
     /// `querylist` is used as filter for the call to gerrit. `additional_infos` gives some more
     /// information of one Change entity.
-    pub fn changes(&mut self, querylist: Option<&Vec<String>>, additional_infos: Option<Vec<String>>)
+    pub fn changes(&mut self, querylist: Option<Vec<String>>, additional_infos: Option<Vec<String>>)
         -> GGRResult<changes::ChangeInfos>
     {
-        let mut querystring = "pp=0&q=".to_string();
-        match querylist {
-            None => { /* nothing to do, we call without filter */ },
-            Some(x) => {
-                let urlfragment = Changes::build_url(x);
-                querystring = format!("{}{}", querystring, urlfragment);
-            },
-        };
+        let mut changes = changes::Changes::new(&self.url);
 
-        if let Some(labels) = additional_infos {
-            if !labels.is_empty() {
-                for label in labels {
-                    querystring = format!("{}&o={}", querystring, label);
-                }
-            }
-        }
+        changes.querylist = querylist;
+        changes.labellist = additional_infos;
 
-        changes::Changes::query_changes(&self.call, &querystring)
+        changes.query_changes()
     }
 
+    /// Convenient function to checkout a topic
     pub fn checkout_topic(&mut self, branchname: &str) -> GGRResult<()> {
             if let Ok(main_repo) = Repository::open(".") {
                 let mut out_ok: Vec<String> = Vec::new();
@@ -126,13 +121,13 @@ impl Gerrit {
         Ok(())
     }
 
-    /// fetch topic `topicname` to branch `local_branch_name`.
+    /// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
     ///
     /// If branch exists and `force` is true, the branch is moving to new position.
     pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>) -> GGRResult<()> {
         let ofields: Vec<String> = vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into());
 
-        let changeinfos = try!(self.changes(Some(&vec![format!("topic:{} status:open", topicname)]), Some(ofields)));
+        let changeinfos = try!(self.changes(Some(vec![format!("topic:{} status:open", topicname)]), Some(ofields)));
         let project_tip = changeinfos.project_tip().unwrap();
 
         // try to fetch topic for main_repo and all submodules
@@ -191,7 +186,7 @@ impl Gerrit {
 
 }
 
-/// convience function to checkout a `branch` on a `repo`. If `print_status` is true, messages are
+/// convenient function to checkout a `branch` on a `repo`. If `print_status` is true, messages are
 /// printed
 fn checkout_repo(repo: &Repository, branchname: &str) -> GGRResult<()> {
     if repo.is_bare() {
@@ -211,7 +206,7 @@ fn checkout_repo(repo: &Repository, branchname: &str) -> GGRResult<()> {
     Err(GGRError::General(String::from_utf8_lossy(&output_checkout.stderr).into()))
 }
 
-/// convience function to pull a `p_tip` from a `repo`, if `basename(repo.url)` same as `p_name`
+/// convenient function to pull a `p_tip` from a `repo`, if `basename(repo.url)` same as `p_name`
 /// is.
 ///
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
@@ -305,28 +300,3 @@ fn test_url_to_projectname() {
     assert_eq!(url_to_projectname(""), None);
 }
 
-// helper structures
-struct Changes;
-impl Changes {
-    pub fn build_url(querylist: &[String]) -> String {
-        let mut out = String::new();
-        for el in querylist.iter() {
-            out.push_str(el);
-            out.push_str("+");
-        }
-        if let Some(x) = out.chars().last() {
-            if x == '+' {
-                out = out.trim_right_matches(x).to_string();
-            }
-        };
-
-        out
-    }
-}
-
-#[test]
-fn test_changes_build_url() {
-    assert_eq!(Changes::build_url(&vec!()), "".to_string());
-    assert_eq!(Changes::build_url(&vec!("a:1".to_string(), "b:2".to_string())), "a:1+b:2".to_string());
-    assert_eq!(Changes::build_url(&vec!("a:1".to_string())), "a:1".to_string());
-}

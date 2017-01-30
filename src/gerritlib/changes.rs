@@ -7,42 +7,99 @@ use serde_json;
 use regex;
 use std::collections::HashMap;
 use entities;
+use gerrit::GerritAccess;
+use url;
 
-pub struct Changes { }
+/// Interface to retrieve Changes information from gerrit server
+pub struct Changes {
+    call: call::Call,
 
-impl Changes {
-    /// Returns a ChangeInfos object on success. This value comes direct from the http call and
-    /// is a valid json object
-    pub fn query_changes(call: &call::Call, querystring: &str) -> GGRResult<ChangeInfos> {
-        if let Ok(cr) = call.get("/changes/".into(), querystring) {
-            let body = match cr.body {
-                Some(x) => x,
-                None => {
-                    /* no body content */
-                    return Ok(ChangeInfos::new());
+    /// Query Information (`q`-parameter) like "owner:self"
+    pub querylist: Option<Vec<String>>,
+
+    /// Additional fields, like `DOWNLOAD_COMMANDS` or `CURRENT_ACTIONS`
+    pub labellist: Option<Vec<String>>,
+}
+
+impl GerritAccess for Changes {
+    // creates ("/a/changes", "pp=0&q="querystring"&o=label&o=label")
+    fn build_url(&self) -> (String, String) {
+        let mut querystring = String::from("pp=0&q=");
+        if let Some(ref querylist) = self.querylist {
+            let mut fragment = String::new();
+            for el in querylist.iter() {
+                fragment.push_str(el);
+                fragment.push_str("+");
+            }
+            if let Some(x) = fragment.chars().last() {
+                if x == '+' {
+                    fragment = fragment.trim_right_matches(x).to_string();
                 }
             };
-            let data2 = try!(String::from_utf8(body));
 
-            let data5 = match serde_json::de::from_str(&data2) {
-                Ok(d) => d,
-                Err(e) => {
-                    println!("error: {}",e);
-                    return Err(GGRError::from(e));
-                }
-            };
+            querystring = format!("{}{}", querystring, fragment);
+        };
 
-            let changeinfos = ChangeInfos::new_with_data(Some(data5));
-
-            return Ok(changeinfos);
-        } else {
-            println!("call problem with: {}", &querystring);
+        if let Some(ref labels) = self.labellist {
+            for label in labels {
+                querystring = format!("{}&o={}", querystring, label);
+            }
         }
-        Ok(ChangeInfos::new())
+
+        querystring = querystring.replace("//", "/");
+
+        (String::from("/a/changes/"), querystring)
     }
 }
 
-#[derive(Default, Debug)]
+impl Changes {
+    pub fn new(url: &url::Url) -> Changes {
+        Changes {
+            call: call::Call::new(url),
+            querylist: None,
+            labellist: None,
+        }
+    }
+
+    /// Returns a ChangeInfos object on success. This value comes direct from the http call and
+    /// is a valid json object
+    pub fn query_changes(&mut self) -> GGRResult<ChangeInfos> {
+        let (path, query) = self.build_url();
+
+        self.call.set_url_query(Some(&query));
+
+        match self.call.get(&path) {
+            Ok(cr) => {
+                let body = match cr.get_body() {
+                    Some(x) => x,
+                    None => {
+                        // no body content
+                        return Ok(ChangeInfos::new());
+                    }
+                };
+                let mut data2 = try!(String::from_utf8(body));
+                data2 = data2.trim().into();
+
+                let data5 = match serde_json::de::from_str(&data2) {
+                    Ok(d) => d,
+                    Err(e) => {
+                        println!("error: {}",e);
+                        return Err(GGRError::from(e));
+                    }
+                };
+
+                let changeinfos = ChangeInfos::new_with_data(Some(data5));
+
+                Ok(changeinfos)
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("call problem with: {} and {} ({})", path, query, x)))
+            }
+        }
+    }
+}
+
+#[derive(Default, Debug, Deserialize)]
 pub struct ChangeInfos {
     pub json: Option<serde_json::value::Value>,
     filter_key: Vec<String>,
