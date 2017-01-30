@@ -191,27 +191,6 @@ docker run --rm -it \
 ```
 
 
-# Workflow
-
-* work on a new branch: `ggr topic create testfeature -F p1:origin/master -F p2`
-* hack hack hack
-* hmm `p3` needs changes too
-* `cd p3 ; ggr topic create testfeature`
-* hack hack hack
-* needs buildserver for integration test `ggr topic push -b testfeature`
-* ssh and do build things
-* push changes to gerrit `ggr topic push testfeature`
-
-# Random Notes
-
-## curl
-
-With this we can handle the rest api ...
-
-```text
-curl -x GET 'http://localhost:8080/projects/?&b=master'
-```
-
 ## useful links
 
 * gerrit api documentation: <https://gerrit-review.googlesource.com/Documentation/rest-api.html>
@@ -219,8 +198,7 @@ curl -x GET 'http://localhost:8080/projects/?&b=master'
 
 # License
 
-Licensed under either of
+Licensed under
 
 *   Mozilla Public License 2.0 ([LICENSE-MPL-2.0](LICENSE-MPL-2.0) or https://www.mozilla.org/media/MPL/2.0/index.txt)
 
-at your option.
