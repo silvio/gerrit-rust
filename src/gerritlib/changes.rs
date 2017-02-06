@@ -161,6 +161,9 @@ impl ChangeInfos {
             let key = keyval.next().unwrap_or("").trim();
             let val = keyval.next().unwrap_or("").trim();
 
+            // remove empty lines
+            if key.is_empty() { continue };
+
             for selector in selectors {
                 if let Ok(re) = regex::Regex::new(selector) {
                     if re.is_match(key) {
