@@ -39,6 +39,7 @@ start_gerrit() {
         --name gerritlatesttest \
         -v ${SITE}:/var/gerrit/review_site \
         -e AUTH_TYPE=DEVELOPMENT_BECOME_ANY_ACCOUNT \
+        -e GERRIT_INIT_ARGS='--install-plugin=download-commands' \
         -p 8080:8080 -p 29418:29418 \
         "${DOCKERIMAGE}" > /dev/null
     echo -n "D"

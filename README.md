@@ -9,12 +9,16 @@ your knowledge.
 # Dependency
 
 *   A installed `git` binary in `$PATH`
+*   gerrit server with installed download-plugin
 
 # Design
 
 Some design considarations here.
 
 *   [ ] semver at version 1.0.0. Before this version no semver!
+*   remove external depency to host
+    [ ] git binary
+    [ ] gerrit with download plugin
 *   [x] **0.1.5** Use of curl-rs as http client
 *   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
