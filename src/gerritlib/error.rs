@@ -8,6 +8,12 @@ use serde_json;
 use std;
 use url;
 
+#[derive(Debug)]
+pub enum GerritError {
+    ChangeInputProblem,
+    GerritApi(u32, String),
+}
+
 quick_error! {
     #[derive(Debug)]
     pub enum GGRError {
@@ -46,6 +52,8 @@ quick_error! {
         Url(err: url::ParseError) {
             description(err.description())
             from()
+        }
+        GerritApiError(err: GerritError) {
         }
     }
 }

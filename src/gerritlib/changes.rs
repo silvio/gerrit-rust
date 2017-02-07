@@ -2,6 +2,7 @@
 use call;
 use error::GGRError;
 use error::GGRResult;
+use error::GerritError;
 use gron::ToGron;
 use serde_json;
 use regex;
@@ -94,6 +95,28 @@ impl Changes {
             },
             Err(x) => {
                 Err(GGRError::General(format!("call problem with: {} and {} ({})", path, query, x)))
+            }
+        }
+    }
+
+    /// api function 'POST /changes'
+    pub fn create_change(&self, ci: &entities::ChangeInput) -> GGRResult<entities::ChangeInfo> {
+        if ci.project.is_empty() || ci.branch.is_empty() || ci.subject.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeInputProblem));
+        }
+
+        let (path, _) = self.build_url();
+
+        match self.call.post(&path, &ci) {
+            Ok(cr) => {
+                if cr.ok() {
+                    cr.convert::<entities::ChangeInfo>()
+                } else {
+                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
+                }
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("Problem '{}' with change create: {:?}", x, ci)))
             }
         }
     }

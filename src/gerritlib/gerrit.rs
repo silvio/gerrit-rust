@@ -50,6 +50,12 @@ impl Gerrit {
         changes.query_changes()
     }
 
+    // TODO: find a better way and better name
+    /// changes api
+    pub fn api_changes(&mut self) -> changes::Changes {
+        changes::Changes::new(&self.url)
+    }
+
     /// Convenient function to checkout a topic
     pub fn checkout_topic(&mut self, branchname: &str) -> GGRResult<()> {
             if let Ok(main_repo) = Repository::open(".") {

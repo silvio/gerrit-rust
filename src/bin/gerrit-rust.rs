@@ -14,6 +14,7 @@ extern crate toml_config;
 pub mod changes;
 pub mod config;
 pub mod topic;
+pub mod gerritapi;
 
 use clap::App;
 use gerritlib::error::GGRError;
@@ -55,6 +56,7 @@ fn main() {
         .subcommand(topic::menu())
         .subcommand(changes::menu())
         .subcommand(config::menu())
+        .subcommand(gerritapi::menu())
         ;
 
     let matches = app.clone().get_matches();
@@ -76,6 +78,7 @@ fn main() {
         ("topic", Some(x)) => { topic::manage(x, config) },
         ("changes", Some(x)) => { changes::manage(x, config) },
         ("config", Some(x)) => { config::manage(x) },
+        ("gerritapi", Some(x)) => { gerritapi::manage(x, config) },
         _ => { let _ = app.print_help(); Ok(()) },
     };
 
