@@ -183,3 +183,23 @@ pub struct ChangeInfo {
     pub _more_changes: Option<bool>,
     pub problems: Option<Vec<ProblemInfo>>,
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ChangeInput {
+    pub project: String,
+    pub branch: String,
+    pub subject: String,
+    pub topic: Option<String>,
+    // TODO: Only NEW and DRAFT allowed
+    pub status: Option<String>,
+    pub base_change: Option<String>,
+    pub new_branch: Option<bool>,
+    pub merge: Option<MergeInput>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct MergeInput {
+    pub source: String,
+    // TODO: only recursive, resolve, simple-two-way-in-core, ours or theirs allowed
+    pub strategy: Option<String>,
+}
