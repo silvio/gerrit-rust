@@ -98,7 +98,10 @@ impl Call {
 
     fn request<S: Serialize>(&self, method: CallMethod, path: &str, body: Option<&S>) -> GGRResult<CallResponse> {
         let mut sendurl = self.base.clone();
-        sendurl.set_path(path);
+        // double replace for pathes with three ///.
+        let complete_path = format!("{}/{}", sendurl.path(), path).replace("//", "/").replace("//", "/");
+        sendurl.set_path(&complete_path);
+
         debug!("url-to-send: {:?}", sendurl);
 
         for am in vec!(
