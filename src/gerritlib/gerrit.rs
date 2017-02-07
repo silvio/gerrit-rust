@@ -124,10 +124,15 @@ impl Gerrit {
     /// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
     ///
     /// If branch exists and `force` is true, the branch is moving to new position.
-    pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>) -> GGRResult<()> {
+    pub fn fetch_topic(&mut self, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>, closed: bool) -> GGRResult<()> {
         let ofields: Vec<String> = vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into());
 
-        let changeinfos = try!(self.changes(Some(vec![format!("topic:{} status:open", topicname)]), Some(ofields)));
+        let mut query_elements = vec![format!("topic:{}", topicname)];
+        if !closed {
+            query_elements.push(String::from("status:open"));
+        }
+
+        let changeinfos = try!(self.changes(Some(query_elements), Some(ofields)));
         let project_tip = changeinfos.project_tip().unwrap();
 
         // try to fetch topic for main_repo and all submodules

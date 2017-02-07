@@ -66,6 +66,10 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .long("track")
                      .takes_value(true)
                  )
+                .arg(Arg::with_name("closed")
+                    .help("Search changes within closed reviews")
+                    .long("closed")
+                )
     )
     .subcommand(SubCommand::with_name("checkout")
                 .about("Checkout a branch on current and all sub repositories")
@@ -228,9 +232,10 @@ fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     let force = y.is_present("force");
     let local_branch_name = y.value_of("branchname").unwrap_or(topicname);
     let tracking_branch_name = y.value_of("track");
+    let closed = y.is_present("closed");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
-    gerrit.fetch_topic(topicname, local_branch_name, force, tracking_branch_name)
+    gerrit.fetch_topic(topicname, local_branch_name, force, tracking_branch_name, closed)
 }
 
 /// checkout topics
