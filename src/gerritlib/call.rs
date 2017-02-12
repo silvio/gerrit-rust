@@ -176,7 +176,7 @@ impl<'a> CallRequest<'a> {
            method: &CallMethod,
            url: &str)
            -> GGRResult<CallRequest<'a>> {
-        info!("request {} {}", method, url);
+        debug!("request {} {}", method, url);
 
         let mut headers = curl::easy::List::new();
         headers.append("Accept: application/json").ok();
@@ -207,7 +207,7 @@ impl<'a> CallRequest<'a> {
     pub fn with_json_body<S: Serialize>(&mut self, body: &S) -> GGRResult<&mut CallRequest<'a>> {
         let mut body_bytes: Vec<u8> = vec![];
         serde_json::to_writer(&mut body_bytes, &body)?;
-        info!("sending JSON data ({} bytes)", body_bytes.len());
+        debug!("sending JSON data ({} bytes)", body_bytes.len());
         self.body = Some(body_bytes);
         self.headers.append("Content-Type: application/json")?;
         Ok(self)
@@ -215,7 +215,7 @@ impl<'a> CallRequest<'a> {
 
     /// attaches some form data to the request.
     pub fn with_form_data(&mut self, form: curl::easy::Form) -> GGRResult<&mut CallRequest<'a>> {
-        info!("sending form data");
+        debug!("sending form data");
         self.handle.httppost(form)?;
         self.body = None;
         Ok(self)
@@ -223,7 +223,7 @@ impl<'a> CallRequest<'a> {
 
     /// enables or disables redirects.  The default is off.
     pub fn follow_location(&mut self, val: bool) -> GGRResult<&mut CallRequest<'a>> {
-        info!("follow redirects: {}", val);
+        debug!("follow redirects: {}", val);
         self.handle.follow_location(val)?;
         Ok(self)
     }
@@ -234,7 +234,7 @@ impl<'a> CallRequest<'a> {
         self.handle.http_headers(self.headers)?;
         let local_body = self.body.clone();
         let (status, headers) = send_req(&mut self.handle, out, local_body)?;
-        info!("response: {}", status);
+        debug!("response: {}", status);
         Ok(CallResponse {
             status: status,
             headers: headers,
