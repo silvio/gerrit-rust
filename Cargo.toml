@@ -6,6 +6,8 @@ license = "MPL-2.0"
 repository = "https://github.com/silvio/gerrit-rust"
 description = "Rust client to gerrit"
 
+build = "build.rs"
+
 [lib]
 name = "gerritlib"
 path = "src/gerritlib/lib.rs"
