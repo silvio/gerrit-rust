@@ -18,6 +18,7 @@ pub mod topic;
 use clap::App;
 use gerritlib::error::GGRError;
 use std::error::Error;
+use std::process::exit;
 
 fn init_log() {
     let format = |record: &log::LogRecord| {
@@ -50,7 +51,14 @@ fn main() {
 
     let matches = app.clone().get_matches();
 
-    let configfile = config::ConfigFile::discover(".", ".ggr.conf").expect("ConfigFile problem");
+    let configfile = match config::ConfigFile::discover(".", ".ggr.conf") {
+        Ok(c) => c,
+        Err(x) => {
+            println!("Problem with loading of config file:");
+            println!("{}", x.to_string());
+            exit(-1);
+        },
+    };
     let config = config::Config::from_configfile(configfile);
     if ! config.is_valid() {
         panic!(GGRError::General("problem with configfile".to_string()));
