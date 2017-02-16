@@ -3,10 +3,16 @@ name = "gerrit-rust"
 version = "0.1.13"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
 license = "MPL-2.0"
+readme = "README.md"
+keywords =  ["cli", "gerrit", "curl", "api"]
+categories = ["api-bindings", "command-line-interface", "web-programming::http-client", "network-programming"]
 repository = "https://github.com/silvio/gerrit-rust"
 description = "Rust client to gerrit"
 
 build = "build.rs"
+
+[badges]
+travis-ci = { repository = "silvio/gerrit-rust" }
 
 [lib]
 name = "gerritlib"
