@@ -4,7 +4,7 @@
 extern crate chrono;
 extern crate clap;
 extern crate env_logger;
-extern crate gerritlib;
+extern crate libgerrit;
 extern crate git2;
 #[macro_use]
 extern crate log;
@@ -17,7 +17,7 @@ pub mod topic;
 pub mod gerritapi;
 
 use clap::App;
-use gerritlib::error::GGRError;
+use libgerrit::error::GGRError;
 use std::error::Error;
 use std::process::exit;
 

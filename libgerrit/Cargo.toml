@@ -1,6 +1,6 @@
 [package]
-name = "gerrit-rust"
-version = "0.1.15"
+name = "libgerrit"
+version = "0.1.13"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
 license = "MPL-2.0"
 readme = "README.md"
@@ -9,30 +9,19 @@ categories = ["api-bindings", "command-line-interface", "web-programming::http-c
 repository = "https://github.com/silvio/gerrit-rust"
 description = "Rust client to gerrit"
 
-build = "build.rs"
-
-[badges]
-travis-ci = { repository = "silvio/gerrit-rust" }
-
-[[bin]]
-name = "gerrit-rust"
-path = "src/bin/gerrit-rust.rs"
-doctest = true
+[lib]
+name = "libgerrit"
+path = "lib.rs"
 
 [dependencies]
-chrono = "0.3"
-clap = "2.20"
 curl = ">= 0.4.4"
 env_logger = "0.4"
 git2 = "0.6"
 gron = "0.2"
-libgerrit = { path = "libgerrit", version = "0.1.13" }
 log = "0.3"
 quick-error = "1.1"
 regex = "0.2"
-rustc-serialize = "0.3"
 serde = "0.8"
 serde_derive = "0.8"
 serde_json = "0.8"
-toml-config = "0.4"
 url = "1.3"

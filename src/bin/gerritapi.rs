@@ -1,9 +1,9 @@
 
 use clap::{self, SubCommand, App, Arg};
-use gerritlib::error::GGRResult;
-use gerritlib::gerrit::Gerrit;
+use libgerrit::error::GGRResult;
+use libgerrit::gerrit::Gerrit;
 use config;
-use gerritlib::entities;
+use libgerrit::entities;
 
 pub fn menu<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("gerritapi")

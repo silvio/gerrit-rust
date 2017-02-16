@@ -2,9 +2,9 @@
 //! manage endpoint `/changes/`
 
 use clap::{self, App, SubCommand, Arg};
-use gerritlib::error::GGRError;
-use gerritlib::error::GGRResult;
-use gerritlib::gerrit::Gerrit;
+use libgerrit::error::GGRError;
+use libgerrit::error::GGRResult;
+use libgerrit::gerrit::Gerrit;
 use config;
 
 /// returns the *Changes* part of gerrit-rusts menu

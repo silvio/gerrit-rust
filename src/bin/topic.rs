@@ -2,9 +2,9 @@
 use clap::{self, SubCommand, App, Arg};
 use git2::Repository;
 use git2::BranchType;
-use gerritlib::error::GGRError;
-use gerritlib::error::GGRResult;
-use gerritlib::gerrit::Gerrit;
+use libgerrit::error::GGRError;
+use libgerrit::error::GGRResult;
+use libgerrit::gerrit::Gerrit;
 use config;
 
 pub fn menu<'a, 'b>() -> App<'a, 'b> {

@@ -27,4 +27,3 @@ pub mod changes;
 pub mod entities;
 pub mod error;
 pub mod gerrit;
-

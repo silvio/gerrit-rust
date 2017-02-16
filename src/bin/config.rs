@@ -2,8 +2,8 @@
 //! configuration related
 
 use clap::{self, SubCommand, App};
-use gerritlib::error::GGRError;
-use gerritlib::error::GGRResult;
+use libgerrit::error::GGRError;
+use libgerrit::error::GGRResult;
 use std::env;
 use std::fmt;
 use std::fs;

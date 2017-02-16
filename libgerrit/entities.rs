@@ -8,7 +8,6 @@
 
 use std::collections::HashMap;
 
-
 #[derive(Deserialize, Debug, Clone)]
 pub struct AccountInfo {
     pub _account_id: Option<u64>,
