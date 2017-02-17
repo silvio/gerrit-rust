@@ -1,0 +1,11 @@
+#!/bin/sh
+
+while ! nc -z localhost 29418; do
+    sleep 1
+done
+
+touch ${GERRIT_SITE}/.started
+sleep 1
+rm ${GERRIT_SITE}/.started
+
+exit

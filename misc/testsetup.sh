@@ -3,41 +3,49 @@
 
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
-SITENAME="GERRIT"
-SITE="${SCRIPT_DIR}/${SITENAME}"
-DOCKERIMAGE="silviof/docker-gerrit:no-check-for-dotfiles"
+WORKDIR="${WORKDIR:-GERRIT}"
+SITE="${SCRIPT_DIR}/${WORKDIR}"
+DOCKERIMAGE="${DOCKERIMAGE:-openfrontier/gerrit:latest}"
 
 
 cleanup() {
     cd ${SCRIPT_DIR}
     docker stop gerritlatesttest
     docker rm gerritlatesttest
-    rm -rf "${SITENAME}"
+    rm -rf "${WORKDIR}"
     rm -rf testsetup/masterproject
 }
 
 wait_print() {
     declare -i secs
-    secs=${1:-60}
+    declare -i orig_secs
 
-    while [ $secs -gt 0 ]; do
+    secs=${1:-60}
+    orig_secs=${secs}
+
+    sleep 3
+    while ! [ -e ${SITE}/.started ] && [ $secs -gt 0 ]; do
         echo -n "."
+        secs=$(( secs-1 ))
         sleep 1
-        : $((secs--))
     done
     echo ""
-}
 
-create_ssh() {
-    mkdir -p ${SITE}/.ssh
-    chmod -R go-rwx ${SITE}/.ssh
-    ssh-keygen -t rsa -N "" -f ${SITE}/.ssh/id_rsa
+    if [ $secs -le 0 ]; then
+        echo ":: run into timeout (${orig_secs})"
+        echo ":: following failures possible because this timeout failure"
+    else
+        secs=$(( orig_secs - secs))
+        echo ":: ssh accessible after ${secs}s"
+    fi
 }
 
 start_gerrit() {
     docker run -h localhost -d \
         --name gerritlatesttest \
         -v ${SITE}:/var/gerrit/review_site \
+        -v ${SCRIPT_DIR}/testsetup/scripts/gen-sshkey.sh:/docker-entrypoint-init.d/gen-sshkey.sh \
+        -v ${SCRIPT_DIR}/testsetup/scripts/check-running-service.sh.nohup:/docker-entrypoint-init.d/check-running-service.sh.nohup \
         -e AUTH_TYPE=DEVELOPMENT_BECOME_ANY_ACCOUNT \
         -e GERRIT_INIT_ARGS='--install-plugin=download-commands' \
         -p 8080:8080 -p 29418:29418 \
@@ -51,9 +59,9 @@ init_repository() {
     cp ${SCRIPT_DIR}/.ggr.conf ${SCRIPT_DIR}/testsetup/masterproject
 
     cd ${SCRIPT_DIR}/testsetup/masterproject
-    git config user.email "test@example.com"
-    git config user.name "gerrit-rust test"
     git init
+    git config --file .git/config user.email "test@example.com"
+    git config --file .git/config user.name "gerrit-rust test"
     curl -Lo .git/hooks/commit-msg http://localhost:8080/tools/hooks/commit-msg
     chmod u+x .git/hooks/commit-msg
     git add lorem-ipsum.txt
@@ -68,14 +76,11 @@ init_repository() {
 echo ":: cleanup"
 cleanup
 
-echo ":: ssh key creation"
-create_ssh
-
 echo ":: pull docker image"
 docker pull "${DOCKERIMAGE}"
 
-SECS=$((1 * 40))
-echo ":: start gerrit server - wait ${SECS} seconds"
+SECS=$((1 * 60))
+echo ":: start gerrit server - timeout ${SECS} seconds"
 start_gerrit &
 wait_print "${SECS}"
 
