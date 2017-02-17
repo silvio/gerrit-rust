@@ -247,18 +247,25 @@ impl<'a> CallRequest<'a> {
         let mut out = vec![];
         let mut rv = self.send_into(&mut out)?;
 
+        let mut valid = false;
+
         debug!("return-from-server: {:?}", rv);
 
         // cut first 4 bytes from output stream
-        // *NOTICE**: The first 4 characters are cutted from the returned content. We want only
+        // **NOTICE**: The first 4 characters are cutted from the returned content. We want only
         // json data which has a prevention against XSSI attacks. More here:
         // <https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/rest-api.html#output>
         if out.starts_with(b")]}'") {
             out = out[4..].into();
+            valid = true;
         }
 
-        rv.body = Some(out);
-        Ok(rv)
+        if valid {
+            rv.body = Some(out);
+            Ok(rv)
+        } else {
+            Err(GGRError::General(String::from_utf8_lossy(&out).into_owned().trim().into()))
+        }
     }
 }
 
