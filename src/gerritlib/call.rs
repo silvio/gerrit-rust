@@ -114,12 +114,16 @@ impl Call {
             }
 
             try!(call_request.handle.http_auth(am));
-            let call_response = try!(call_request.send());
-            if call_response.status == 401 {
-                continue;
-            }
-            return Ok(call_response);
+            match call_request.send() {
+                Ok(call_response) => {
+                    return Ok(call_response);
+                },
+                Err(_) => {
+                    continue
+                }
+            };
         }
+
         Err(GGRError::General("No Authentication algorithm found for your gerrit server. 'basic' and 'digest' tested".into()))
     }
 
