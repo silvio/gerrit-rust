@@ -44,8 +44,8 @@ impl Gerrit {
     {
         let mut changes = changes::Changes::new(&self.url);
 
-        changes.querylist = querylist;
-        changes.labellist = additional_infos;
+        changes.querylist = querylist.unwrap_or(vec!());
+        changes.labellist = additional_infos.unwrap_or(vec!());
 
         changes.query_changes()
     }

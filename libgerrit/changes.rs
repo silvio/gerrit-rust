@@ -16,19 +16,19 @@ pub struct Changes {
     call: call::Call,
 
     /// Query Information (`q`-parameter) like "owner:self"
-    pub querylist: Option<Vec<String>>,
+    pub querylist: Vec<String>,
 
     /// Additional fields, like `DOWNLOAD_COMMANDS` or `CURRENT_ACTIONS`
-    pub labellist: Option<Vec<String>>,
+    pub labellist: Vec<String>,
 }
 
 impl GerritAccess for Changes {
     // creates ("/a/changes", "pp=0&q="querystring"&o=label&o=label")
     fn build_url(&self) -> (String, String) {
         let mut querystring = String::from("pp=0&q=");
-        if let Some(ref querylist) = self.querylist {
+        if ! self.querylist.is_empty() {
             let mut fragment = String::new();
-            for el in querylist.iter() {
+            for el in self.querylist.iter() {
                 fragment.push_str(el);
                 fragment.push_str("+");
             }
@@ -41,9 +41,9 @@ impl GerritAccess for Changes {
             querystring = format!("{}{}", querystring, fragment);
         };
 
-        if let Some(ref labels) = self.labellist {
-            for label in labels {
-                querystring = format!("{}&o={}", querystring, label);
+        if ! self.labellist.is_empty() {
+            for label in &self.labellist {
+                querystring = format!("{}&o={}", querystring, &label);
             }
         }
 
@@ -57,9 +57,19 @@ impl Changes {
     pub fn new(url: &url::Url) -> Changes {
         Changes {
             call: call::Call::new(url),
-            querylist: None,
-            labellist: None,
+            querylist: Vec::new(),
+            labellist: Vec::new(),
         }
+    }
+
+    pub fn add_query_part(&mut self, q: String) -> &mut Changes {
+        self.querylist.push(q);
+        self
+    }
+
+    pub fn add_label(&mut self, l: String) -> &mut Changes {
+        self.labellist.push(l);
+        self
     }
 
     /// Returns a ChangeInfos object on success. This value comes direct from the http call and
