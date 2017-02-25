@@ -1,6 +1,7 @@
 
 //! Implements the gerrit structure
 
+use config;
 use changes;
 use url;
 
@@ -34,6 +35,13 @@ impl Gerrit {
     /// This represent a change endpoint for add, remove or manipulating of changes and changesets
     pub fn changes(&mut self) -> changes::Changes {
         changes::Changes::new(&self.url)
+    }
+
+    /// Returnes a Config endpoint
+    ///
+    /// manipulate the configuration of a gerrit instance
+    pub fn config(&mut self) -> config::Config {
+        config::Config::new(&self.url)
     }
 }
 

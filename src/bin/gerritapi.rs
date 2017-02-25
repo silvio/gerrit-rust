@@ -45,16 +45,37 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                              )
                 )
     )
+    .subcommand(SubCommand::with_name("config")
+                .about("Config endpoint")
+                .arg(Arg::with_name("version")
+                     .short("V")
+                     .help("gerrit server version")
+                )
+    )
 }
 
 pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("changes", Some(y)) => { changes(y, config) },
+        ("config", Some(y)) => { configs(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
         },
     }
+}
+
+fn configs(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+    let mut gerrit = Gerrit::new(config.get_base_url());
+
+    if y.is_present("version") {
+        match gerrit.config().get_version() {
+            Ok(version) => println!("version: {:?}", version),
+            Err(x) => println!("Error: {:?}", x),
+        }
+    }
+
+    Ok(())
 }
 
 fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
