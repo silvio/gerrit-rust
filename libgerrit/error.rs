@@ -3,7 +3,6 @@
 
 use curl;
 use git2;
-use regex;
 use serde_json;
 use std;
 use url;
@@ -38,10 +37,6 @@ quick_error! {
             from()
         }
         Num(err: std::num::ParseIntError) {
-            description(err.description())
-            from()
-        }
-        Regex(err: regex::Error) {
             description(err.description())
             from()
         }

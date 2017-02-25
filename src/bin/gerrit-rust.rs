@@ -6,9 +6,12 @@ extern crate clap;
 extern crate env_logger;
 extern crate libgerrit;
 extern crate git2;
+extern crate gron;
 #[macro_use]
 extern crate log;
+extern crate regex;
 extern crate rustc_serialize;
+extern crate serde_json;
 extern crate toml_config;
 
 pub mod changes;

@@ -6,77 +6,145 @@
 //!
 //! **NOTICE**: Only current needed entities are here reflected.
 
+#![warn(missing_docs)]
+
 use std::collections::HashMap;
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `AccountInfo` entity contains information about an account
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AccountInfo {
+    /// The numeric ID of the account
     pub _account_id: Option<u64>,
+    /// The full name of the user. Only set if detailed account information is requested. See
+    /// option DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
+    /// (optional)
     pub name: Option<String>,
+    /// The email address the user prefers to be contacted through. Only set if detailed account
+    /// information is requested. See option DETAILED_ACCOUNTS for change queries and options
+    /// DETAILS and ALL_EMAILS for account queries.  
+    /// (optional)
     pub email: Option<String>,
+    /// A list of the secondary email addresses of the user. Only set for account queries when the
+    /// ALL_EMAILS option is set.  
+    /// (optional)
     pub secondary_emails: Option<Vec<String>>,
+    /// The username of the user. Only set if detailed account information is requested. See option
+    /// DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
+    /// (optional)
     pub username: Option<String>,
+    /// Whether the query would deliver more results if not limited. Only set on the last account
+    /// that is returned.  
+    /// (optional, not set if false)
     pub _more_accounts: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `ActionInfo` entity describes a REST API call the client can make to manipulate a resource.
+/// These are frequently implemented by plugins and may be discovered at runtime.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ActionInfo {
+    /// HTTP method to use with the action. Most actions use POST, PUT or DELETE to cause state
+    /// changes.  
+    /// (optional)
     pub method: Option<String>,
+    /// Short title to display to a user describing the action. In the Gerrit web interface the
+    /// label is used as the text on the button presented in the UI.  
+    /// (optional)
     pub label: Option<String>,
+    /// Longer text to display describing the action. In a web UI this should be the title
+    /// attribute of the element, displaying when the user hovers the mouse.  
+    /// (optional)
     pub title: Option<String>,
+    /// If true the action is permitted at this time and the caller is likely allowed to execute
+    /// it. This may change if state is updated at the server or permissions are modified. Not
+    /// present if false.  
+    /// (optional)
     pub enabled: Option<String>,
 }
 
-// the enum variants must be in upper case letters, the server will send them in this style
-#[derive(Deserialize, Debug, Clone)]
-pub enum ChangeStatus {
+/// `ChangeInfo` helper variant to present a status of a change
+#[allow(non_camel_case_types)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum ChangeInfo_ChangeStatus {
+    /// new change
     NEW,
+    /// change is merged
     MERGED,
+    /// change is abandoned
     ABANDONED,
+    /// its a draft change
     DRAFT,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `LabelInfo` entity contains information about a label on a change, always corresponding to
+/// the current patch set.
+///
+/// There are two options that control the contents of `LabelInfo`: `LABELS` and `DETAILED_LABELS`.
+///
+/// * For a quick summary of the state of labels, use `LABELS`.
+/// * For detailed information about labels, including exact numeric votes for all users and the
+///   allowed range of votes for the current user, use `DETAILED_LABELS`.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct LabelInfo {
+    /// Whether the label is optional. Optional means the label may be set, but it’s neither
+    /// necessary for submission nor does it block submission if set.  
+    /// (optional)
     pub optional: Option<bool>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `ChangeMessageInfo` entity contains information about a message attached to a change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ChangeMessageInfo {
+    /// The ID of the message.
     pub id: String,
+    /// Author of the message as an AccountInfo entity. Unset if written by the Gerrit system.  
+    /// (optional)
     pub author: Option<AccountInfo>,
+    /// The timestamp this message was posted.
     pub date: String,
+    /// The text left by the user.
     pub message: String,
+    /// Value of the tag field from ReviewInput set while posting the review. NOTE: To apply
+    /// different tags on on different votes/comments multiple invocations of the REST call are
+    /// required.  
+    /// (optional)
     pub tag: Option<String>,
+    /// Which patchset (if any) generated this message.  
+    /// (optional)
     pub _revision_number: Option<u16>,
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Deserialize, Debug, Clone)]
-pub enum RevisionInfoKind {
-    REWORK,
-    TRIVIAL_REBASE,
-    MERGE_FIRST_PARENT_UPDATE,
-    NO_CODE_CHANGE,
-    NO_CHANGE,
-}
-
-#[derive(Deserialize, Debug, Clone)]
+/// The `FetchInfo` entity contains information about how to fetch a patch set via a certain
+/// protocol.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct FetchInfo {
+    /// The URL of the project.
     pub url: String,
+    /// The ref of the patch set.
     #[serde(rename="ref")] // "ref" is a keyword
     pub reference: String,
+    /// The download commands for this patch set as a map that maps the command names to the
+    /// commands.
+    /// Only set if download commands are requested.  
+    /// (optional)
     pub commands: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `GitPersonInfo` entity contains information about the author/committer of a commit.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GitPersonInfo {
+    /// The name of the author/committer.
     pub name: String,
+    /// The email address of the author/committer.
     pub email: String,
+    /// The timestamp of when this identity was constructed.
     pub date: String,
+    /// The timezone offset from UTC of when this identity was constructed.
     pub tz: u16,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// `CommitInfoParents`, same as `CommitInfo` but commit is string
+#[allow(missing_docs)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CommitInfoParents {
     pub commit: String,
     pub author: Option<GitPersonInfo>,
@@ -86,119 +154,265 @@ pub struct CommitInfoParents {
     pub web_links: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `CommitInfo` entity contains information about a commit.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CommitInfo {
+    /// The commit ID. Not set if included in a RevisionInfo entity that is contained in a map
+    /// which has the commit ID as key.  
+    /// (optional)
     pub commit: Option<String>,
+    /// The parent commits of this commit as a list of CommitInfo entities. In each parent only the
+    /// commit and subject fields are populated.  
+    /// (optional)
     pub parents: Option<Vec<CommitInfoParents>>,
+    /// The author of the commit as a GitPersonInfo entity.
     pub author: Option<GitPersonInfo>,
+    /// The committer of the commit as a GitPersonInfo entity.
     pub committer: Option<GitPersonInfo>,
+    /// The subject of the commit (header line of the commit message).
     pub subject: Option<String>,
+    /// The commit message.
     pub message: Option<String>,
+    /// Links to the commit in external sites as a list of WebLinkInfo entities.  
+    /// (optional)
     pub web_links: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `RevisionInfo` entity contains information about a patch set. Not all fields are returned by
+/// default. Additional fields can be obtained by adding o parameters as described in Query
+/// Changes.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct RevisionInfo {
+    /// Whether the patch set is a draft.  
+    /// (optional)
     pub draft: Option<bool>,
+    /// Whether the patch set has one or more draft comments by the calling user. Only set if draft
+    /// comments is requested.  
+    /// (optional)
     pub has_draft_comments: Option<bool>,
+    /// The patch set number.
     pub _number: u64,
+    /// The timestamp of when the patch set was created.  
+    /// (v2.15)
     pub created: Option<String>,
+    /// The uploader of the patch set as an AccountInfo entity.
     pub uploader: Option<AccountInfo>,
+    /// The Git reference for the patch set.
     #[serde(rename="ref")] // "ref" is a keyword
     pub reference: Option<String>,
+    /// Information about how to fetch this patch set. The fetch information is provided as a map
+    /// that maps the protocol name (“git”, “http”, “ssh”) to FetchInfo entities. This information
+    /// is only included if a plugin implementing the download commands interface is installed.
     pub fetch: HashMap<String, FetchInfo>,
+    /// The commit of the patch set as CommitInfo entity.
     pub commit: Option<CommitInfo>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `ProblemInfo` entity contains a description of a potential consistency problem with a change.
+/// These are not related to the code review process, but rather indicate some inconsistency in
+/// Gerrit’s database or repository metadata related to the enclosing change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ProblemInfo {
+    /// Plaintext message describing the problem with the change.
     pub message: String,
+    /// The status of fixing the problem (FIXED, FIX_FAILED). Only set if a fix was attempted.  
+    /// (optional)
     pub status: Option<String>,
+    /// If status is set, an additional plaintext message describing the outcome of the fix.  
+    /// (optional)
     pub outcome: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub enum ProjectState {
+/// `ProjectInfo` helper variant to present a status of a project
+#[allow(non_camel_case_types)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum ProjectInfo_ProjectState {
+    /// The project is active
     ACTIVE,
+    /// Project is read only, noch anges possible
     READONLY,
+    /// project is hidden
     HIDDEN,
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub enum ProjectTypes {
-    ALL,
-    CODE,
-    PERMISSIONS,
-}
-
-#[derive(Deserialize, Debug, Clone)]
+/// The `WebLinkInfo` entity describes a link to an external site.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct WebLinkInfo {
+    /// The link name.
     pub name: String,
+    /// The link URL.
     pub url: String,
+    /// URL to the icon of the link.
     pub image_url: String,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `ProjectInfo` entity contains information about a project.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ProjectInfo {
+    /// The name of the project.  
+    /// (optional, not set if returned in a map where the project name is used as map key)
     pub name: Option<String>,
+    /// The URL encoded project name.
     pub id: String,
+    /// The name of the parent project.
+    /// ?-<n> if the parent project is not visible (<n> is a number which is increased for each
+    /// non-visible project).  
+    /// (optional)
     pub parent: Option<String>,
+    /// The description of the project.  
+    /// (optional)
     pub description: Option<String>,
-    pub state: Option<ProjectState>,
+    /// ACTIVE, READ_ONLY or HIDDEN.  
+    /// (optional)
+    pub state: Option<ProjectInfo_ProjectState>,
+    /// Map of branch names to HEAD revisions.  
+    /// (optional)
     pub branches: Option<HashMap<String, String>>,
+    /// Links to the project in external sites as a list of WebLinkInfo entries.  
+    /// (optional, 2.15)
     pub web_links: Option<Vec<WebLinkInfo>>,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+/// The `ChangeInfo` entity contains information about a change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ChangeInfo {
+    /// The ID of the change in the format "'<project>~<branch>~<Change-Id>'", where 'project',
+    /// 'branch' and 'Change-Id' are URL encoded. For 'branch' the refs/heads/ prefix is omitted.
     pub id: String,
+    /// The name of the project.
     pub project: String,
+    /// The name of the target branch.
+    /// The refs/heads/ prefix is omitted.
     pub branch: String,
+    /// The topic to which this change belongs.  
+    /// (optional)
     pub topic: Option<String>,
+    /// The Change-Id of the change.
     pub change_id: String,
+    /// The subject of the change (header line of the commit message).
     pub subject: String,
-    pub status: ChangeStatus,
+    /// The status of the change (NEW, MERGED, ABANDONED, DRAFT).
+    pub status: ChangeInfo_ChangeStatus,
+    /// The timestamp of when the change was created.
     pub created: String,
+    /// The timestamp of when the change was last updated.
     pub updated: String,
+    /// The timestamp of when the change was submitted.  
+    /// (optional, only set for merged changes)
     pub submitted: Option<String>,
+    /// Whether the calling user has starred this change with the default label.  
+    /// (optional)
     pub starred: Option<bool>,
+    /// A list of star labels that are applied by the calling user to this change. The labels are
+    /// lexicographically sorted.  
+    /// (optional)
     pub stars: Option<Vec<String>>,
+    /// Whether the change was reviewed by the calling user. Only set if reviewed is requested.  
+    /// (optional)
     pub reviewed: Option<bool>,
+    /// The submit type of the change.
+    /// Not set for merged changes.  
+    /// (optional)
     pub submit_type: Option<String>,
+    /// Whether the change is mergeable.
+    /// Not set for merged changes, or if the change has not yet been tested.  
+    /// (optional)
     pub mergeable: Option<bool>,
+    /// Number of inserted lines.
     pub insertions: u16,
+    /// Number of deleted lines.
     pub deletions: u16,
+    /// The legacy numeric ID of the change.
     pub _number: u64,
+    /// The owner of the change as an AccountInfo entity.
     pub owner: AccountInfo,
+    /// Actions the caller might be able to perform on this revision. The information is a map of
+    /// view name to ActionInfo entities.  
+    /// (optional)
     pub action: Option<Vec<ActionInfo>>,
+    /// The labels of the change as a map that maps the label names to LabelInfo entries.
+    /// Only set if labels or detailed labels are requested.  
+    /// (optional)
     pub labels: Option<HashMap<String, LabelInfo>>,
+    /// A map of the permitted labels that maps a label name to the list of values that are allowed
+    /// for that label.
+    /// Only set if detailed labels are requested.  
+    /// (optional)
     pub permitted_labels: Option<HashMap<String, LabelInfo>>,
+    /// The reviewers that can be removed by the calling user as a list of AccountInfo entities.
+    /// Only set if detailed labels are requested.  
+    /// (optional)
     pub removeable_reviewers: Option<Vec<AccountInfo>>,
+    /// The reviewers as a map that maps a reviewer state to a list of AccountInfo entities.
+    /// Possible reviewer states are REVIEWER, CC and REMOVED.
+    /// REVIEWER: Users with at least one non-zero vote on the change.
+    /// CC: Users that were added to the change, but have not voted.
+    /// REMOVED: Users that were previously reviewers on the change, but have been removed.
+    /// Only set if detailed labels are requested.  
+    /// (optional)
+    // TODO: own enum
     pub reviewers: Option<String>,
+    /// Messages associated with the change as a list of ChangeMessageInfo entities.
+    /// Only set if messages are requested.  
+    /// (optional)
     pub messages: Option<HashMap<String, ChangeMessageInfo>>,
+    /// The commit ID of the current patch set of this change.
+    /// Only set if the current revision is requested or if all revisions are requested.  
+    /// (optional)
     pub current_revision: Option<String>,
-    pub revision: Option<HashMap<String, RevisionInfo>>,
+    /// All patch sets of this change as a map that maps the commit ID of the patch set to a
+    /// RevisionInfo entity.
+    /// Only set if the current revision is requested (in which case it will only contain a key for
+    /// the current revision) or if all revisions are requested.  
+    /// (optional)
     pub revisions: Option<HashMap<String, RevisionInfo>>,
+    /// Whether the query would deliver more results if not limited.
+    /// Only set on the last change that is returned.  
+    /// (optional)
     pub _more_changes: Option<bool>,
+    /// A list of ProblemInfo entities describing potential problems with this change. Only set if
+    /// CHECK is set.  
+    /// (optional)
     pub problems: Option<Vec<ProblemInfo>>,
 }
 
+/// The `ChangeInput` entity contains information about creating a new change.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ChangeInput {
+    /// The name of the project.
     pub project: String,
+    /// The name of the target branch.
+    /// The refs/heads/ prefix is omitted.
     pub branch: String,
+    /// The subject of the change (header line of the commit message).
     pub subject: String,
+    /// The topic to which this change belongs.  
+    /// (optional)
     pub topic: Option<String>,
+    /// The status of the change (only NEW and DRAFT accepted here).  
+    /// (optional)
     // TODO: Only NEW and DRAFT allowed
     pub status: Option<String>,
+    /// A {change-id} that identifies the base change for a create change operation.  
+    /// (optional)
     pub base_change: Option<String>,
+    /// Allow creating a new branch when set to true.  
+    /// (optional)
     pub new_branch: Option<bool>,
+    /// The detail of a merge commit as a MergeInput entity.  
+    /// (optiional)
     pub merge: Option<MergeInput>,
 }
 
+/// The `MergeInput` entity contains information about the merge
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MergeInput {
+    /// The source to merge from, e.g. a complete or abbreviated commit SHA-1, a complete reference
+    /// name, a short reference name under refs/heads, refs/tags, or refs/remotes namespace, etc.
     pub source: String,
+    /// The strategy of the merge, can be recursive, resolve, simple-two-way-in-core, ours or
+    /// theirs, default will use project settings.  
+    /// (optional)
     // TODO: only recursive, resolve, simple-two-way-in-core, ours or theirs allowed
     pub strategy: Option<String>,
 }

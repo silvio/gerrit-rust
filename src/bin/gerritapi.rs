@@ -34,6 +34,16 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                                  .help("The subject of the change (header line of the commit message).")
                              )
                 )
+                .subcommand(SubCommand::with_name("query")
+                            .about("query changes")
+                            .arg(Arg::with_name("query")
+                                 .required(true)
+                                 .takes_value(true)
+                                 .long("query")
+                                 .short("q")
+                                 .help("Query string")
+                             )
+                )
     )
 }
 
@@ -67,7 +77,7 @@ fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
                 topic: None,
             };
 
-            match gerrit.api_changes().create_change(&ci) {
+            match gerrit.changes().create_change(&ci) {
                 Ok(changeinfo) => {
                     println!("Change created! Returned data");
                     println!("{:?}", changeinfo);
@@ -76,7 +86,21 @@ fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
                     println!("Error: {:?}", x);
                 }
             }
+        },
 
+        ("query", Some(opt)) => {
+            let query = opt.value_of("query").unwrap();
+
+            match gerrit.changes().add_query_part(query).query_changes() {
+                Ok(cis) => {
+                    for i in cis {
+                        println!("* {:?}", i);
+                    }
+                },
+                Err(x) => {
+                    println!("Error: {:?}", x);
+                }
+            }
         },
 
         e => {
