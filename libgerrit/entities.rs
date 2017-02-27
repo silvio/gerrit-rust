@@ -178,35 +178,192 @@ pub struct CommitInfo {
     pub web_links: Option<String>,
 }
 
+/// The FileInfo entity contains information about a file in a patch set.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct FileInfo0209 {
+    /// The status of the file ("A"=Added, "D"=Deleted, "R"=Renamed, "C"=Copied, "W"=Rewritten).
+    /// Not set if the file was Modified ("M").
+    pub status: Option<String>,
+    /// Whether the file is binary.
+    pub binary: Option<bool>,
+    /// The old file path.
+    /// Only set if the file was renamed or copied.
+    pub old_path: Option<String>,
+    /// Number of inserted lines.
+    /// Not set for binary files or if no lines were inserted.
+    pub lines_inserted: Option<u64>,
+    /// Number of deleted lines.
+    /// Not set for binary files or if no lines were deleted.
+    pub lines_deleted: Option<String>,
+}
+
+/// The FileInfo entity contains information about a file in a patch set.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct FileInfo0213 {
+    /// The status of the file ("A"=Added, "D"=Deleted, "R"=Renamed, "C"=Copied, "W"=Rewritten).
+    /// Not set if the file was Modified ("M").
+    pub status: Option<String>,
+    /// Whether the file is binary.
+    pub binary: Option<bool>,
+    /// The old file path.
+    /// Only set if the file was renamed or copied.
+    pub old_path: Option<String>,
+    /// Number of inserted lines.
+    /// Not set for binary files or if no lines were inserted.
+    pub lines_inserted: Option<u64>,
+    /// Number of deleted lines.
+    /// Not set for binary files or if no lines were deleted.
+    pub lines_deleted: Option<String>,
+    /// Number of bytes by which the file size increased/decreased.
+    pub size_delta: u64,
+    /// File size in bytes.
+    pub size: u64,
+}
+
+/// `FileInfo` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum FileInfo {
+    /// V2.09
+    Gerrit0209(FileInfo0209),
+    /// V2.13
+    Gerrit0213(FileInfo0213),
+}
+
+
+/// The RevisionInfo entity contains information about a patch set.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct RevisionInfo0209 {
+    /// Whether the patch set is a draft.
+    pub draft: Option<bool>,
+    /// Whether the patch set has one or more draft comments by the calling user. Only set if draft
+    /// comments is requested.
+    pub has_draft_comments: Option<bool>,
+    /// The patch set number.
+    pub _number: u64,
+    /// Information about how to fetch this patch set. The fetch information is provided as a map
+    /// that maps the protocol name ("git", "http", "ssh") to FetchInfo entities.
+    pub fetch: HashMap<String, FetchInfo>,
+    /// The commit of the patch set as `CommitInfo` entity.
+    pub commit: Option<CommitInfo>,
+    /// The files of the patch set as a map that maps the file names to `FileInfo` entities.
+    pub files: Option<HashMap<String, FileInfo0209>>,
+    /// Actions the caller might be able to perform on this revision. The information is a map of
+    /// view name to ActionInfo entities.
+    pub actions: Option<HashMap<String, ActionInfo>>,
+}
+
+#[allow(non_camel_case_types)]
+#[allow(missing_docs)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub enum RevisionInfo0213_ChangeKind {
+    #[allow(missing_docs)]
+    REWORK,
+    #[allow(missing_docs)]
+    TRIVIAL_REBASE,
+    #[allow(missing_docs)]
+    MERGE_FIRST_PARENT_UPDATE,
+    #[allow(missing_docs)]
+    NO_CODE_CHANGE,
+    #[allow(missing_docs)]
+    NO_CHANGE,
+}
+
 /// The `RevisionInfo` entity contains information about a patch set. Not all fields are returned by
 /// default. Additional fields can be obtained by adding o parameters as described in Query
 /// Changes.
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct RevisionInfo {
+#[serde(deny_unknown_fields)]
+pub struct RevisionInfo0213 {
     /// Whether the patch set is a draft.  
     /// (optional)
     pub draft: Option<bool>,
-    /// Whether the patch set has one or more draft comments by the calling user. Only set if draft
-    /// comments is requested.  
-    /// (optional)
-    pub has_draft_comments: Option<bool>,
+    /// The change kind. Valid values are REWORK, TRIVIAL_REBASE, MERGE_FIRST_PARENT_UPDATE,
+    /// NO_CODE_CHANGE, and NO_CHANGE.
+    pub kind: RevisionInfo0213_ChangeKind,
     /// The patch set number.
     pub _number: u64,
     /// The timestamp of when the patch set was created.  
     /// (v2.15)
-    pub created: Option<String>,
+    pub created: String,
     /// The uploader of the patch set as an AccountInfo entity.
-    pub uploader: Option<AccountInfo>,
+    pub uploader: AccountInfo,
     /// The Git reference for the patch set.
     #[serde(rename="ref")] // "ref" is a keyword
-    pub reference: Option<String>,
+    pub reference: String,
     /// Information about how to fetch this patch set. The fetch information is provided as a map
     /// that maps the protocol name (“git”, “http”, “ssh”) to FetchInfo entities. This information
     /// is only included if a plugin implementing the download commands interface is installed.
     pub fetch: HashMap<String, FetchInfo>,
-    /// The commit of the patch set as CommitInfo entity.
+    /// The commit of the patch set as `CommitInfo` entity.
     pub commit: Option<CommitInfo>,
+    /// The files of the patch set as a map that maps the file names to FileInfo entities. Only set
+    /// if CURRENT_FILES or ALL_FILES option is requested.
+    pub files: Option<FileInfo0213>,
+    /// Actions the caller might be able to perform on this revision. The information is a map of
+    /// view name to ActionInfo entities.
+    pub actions: Option<HashMap<String, ActionInfo>>,
+    /// Indicates whether the caller is authenticated and has commented on the current revision.
+    /// Only set if REVIEWED option is requested.
+    pub reviewed: Option<bool>,
+    /// If the COMMIT_FOOTERS option is requested and this is the current patch set, contains the
+    /// full commit message with Gerrit-specific commit footers, as if this revision were submitted
+    /// using the Cherry Pick submit type.
+    #[serde(rename="messageWithFooter")] // "ref" is a keyword
+    pub message_with_footer: Option<String>,
+    /// If the PUSH_CERTIFICATES option is requested, contains the push certificate provided by the
+    /// user when uploading this patch set as a PushCertificateInfo entity. This field is always
+    /// set if the option is requested; if no push certificate was provided, it is set to an empty
+    /// object.
+    pub push_certificate: Option<PushCertificateInfo>,
 }
+
+/// `RevisionInfo` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum RevisionInfo {
+    /// V2.09
+    Gerrit0209(RevisionInfo0209),
+    /// V2.13
+    Gerrit0213(RevisionInfo0213),
+}
+
+/// The `PushCertificateInfo` entity contains information about a push certificate provided when
+/// the user pushed for review with git push --signed HEAD:refs/for/<branch>. Only used when signed
+/// push is enabled on the server.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct PushCertificateInfo {
+    /// Signed certificate payload and GPG signature block.
+    pub certificate: String,
+    /// Information about the key that signed the push, along with any problems found while
+    /// checking the signature or the key itself, as a GpgKeyInfo entity.
+    pub key: GpgKeyInfo,
+}
+
+/// The GpgKeyInfo entity contains information about a GPG public key.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct GpgKeyInfo {
+    /// The 8-char hex GPG key ID.
+    pub id: Option<String>,
+    /// The 40-char (plus spaces) hex GPG key fingerprint.
+    pub fingerprint: Option<String>,
+    /// OpenPGP User IDs associated with the public key.
+    pub user_ids: String,
+    /// ASCII armored public key material.
+    pub key: String,
+    /// The result of server-side checks on the key; one of BAD, OK, or TRUSTED. BAD keys have
+    /// serious problems and should not be used. If a key is OK, inspecting only that key found no
+    /// problems, but the system does not fully trust the key’s origin. A `TRUSTED key is valid,
+    /// and the system knows enough about the key and its origin to trust it.
+    pub status: Option<String>,
+    /// A list of human-readable problem strings found in the course of checking whether the key is
+    /// valid and trusted.
+    pub problems: Option<String>,
+}
+
 
 /// The `ProblemInfo` entity contains a description of a potential consistency problem with a change.
 /// These are not related to the code review process, but rather indicate some inconsistency in

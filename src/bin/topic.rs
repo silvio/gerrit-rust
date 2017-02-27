@@ -343,7 +343,14 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                 if let Ok(entity) = entity_from_commit(ci, p_tip) {
                     if let Some(ref cur_rev) = entity.current_revision {
                         if let Some(ref revisions) = entity.revisions {
-                            let reference = &revisions[cur_rev].fetch["http"].reference;
+                            let reference = match *revisions.get(cur_rev).unwrap() {
+                                entities::RevisionInfo::Gerrit0209(ref x) => {
+                                    &x.fetch.get("http").unwrap().reference
+                                },
+                                entities::RevisionInfo::Gerrit0213(ref x) => {
+                                    &x.fetch.get("http").unwrap().reference
+                                },
+                            };
                             let force_string = if force {"+"} else { "" };
                             let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
 
@@ -416,8 +423,18 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
         for element in changes {
             if let Some(ref cur_revision) = element.current_revision {
                 if let Some(ref revisions) = element.revisions {
-                    if let Some(rev) = revisions.get(cur_revision) {
-                        if let Some(ref commit) = rev.commit {
+
+                    if let Some(cur_revision) = revisions.get(cur_revision) {
+                        let commit = match cur_revision {
+                            &entities::RevisionInfo::Gerrit0209(ref x) => {
+                                &x.commit
+                            },
+                            &entities::RevisionInfo::Gerrit0213(ref x) => {
+                                &x.commit
+                            }
+                        };
+
+                        if let Some(ref commit) = *commit {
                             if let Some(ref parents) = commit.parents {
                                 for p in parents {
                                     list_all_parents.push(&p.commit);

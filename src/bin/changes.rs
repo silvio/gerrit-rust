@@ -156,7 +156,7 @@ impl ChangeInfos {
     }
 
     pub fn to_json(&self) -> serde_json::Value {
-        serde_json::to_value(&self.vec)
+        serde_json::to_value(&self.vec).expect("Problem with to_value")
     }
 
     /// add a regular expression filter for keys
