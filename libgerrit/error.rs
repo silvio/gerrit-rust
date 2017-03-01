@@ -3,10 +3,15 @@
 
 use curl;
 use git2;
-use regex;
 use serde_json;
 use std;
 use url;
+
+#[derive(Debug)]
+pub enum GerritError {
+    ChangeInputProblem,
+    GerritApi(u32, String),
+}
 
 quick_error! {
     #[derive(Debug)]
@@ -35,10 +40,6 @@ quick_error! {
             description(err.description())
             from()
         }
-        Regex(err: regex::Error) {
-            description(err.description())
-            from()
-        }
         StdIo(err: std::io::Error) {
             description(err.description())
             from()
@@ -46,6 +47,8 @@ quick_error! {
         Url(err: url::ParseError) {
             description(err.description())
             from()
+        }
+        GerritApiError(err: GerritError) {
         }
     }
 }

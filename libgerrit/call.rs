@@ -11,6 +11,7 @@ use url;
 use error::GGRResult;
 use error::GGRError;
 
+/// interface function for `handle_req`, set some fields if body has content
 fn send_req<W: Write>(handle: &mut curl::easy::Easy,
                       out: &mut W,
                       body: Option<Vec<u8>>)
@@ -26,6 +27,7 @@ fn send_req<W: Write>(handle: &mut curl::easy::Easy,
     }
 }
 
+/// do the curl request
 fn handle_req<W: Write>(handle: &mut curl::easy::Easy,
                         out: &mut W,
                         read: &mut FnMut(&mut [u8]) -> usize)
@@ -50,6 +52,7 @@ fn handle_req<W: Write>(handle: &mut curl::easy::Easy,
     Ok((handle.response_code()?, headers))
 }
 
+/// https actions
 #[derive(PartialEq, Debug)]
 enum CallMethod {
     Get,
@@ -69,12 +72,14 @@ impl fmt::Display for CallMethod {
     }
 }
 
+/// Interface to talk with a http server
 pub struct Call {
     shared_handle: RefCell<curl::easy::Easy>,
     base: url::Url,
 }
 
 impl Call {
+    /// create a new call object with url as endpoint
     pub fn new(url: &url::Url) -> Call {
         Call {
             shared_handle: RefCell::new(curl::easy::Easy::new()),
@@ -82,12 +87,14 @@ impl Call {
         }
     }
 
+    /// change url objects query information
     pub fn set_url_query(&mut self, q: Option<&str>) {
         self.base.set_query(q);
     }
 
     // Low Level Methods
 
+    /// set cookie and netrc options and returnes a CallRequest
     fn do_request(&self, method: &CallMethod, url: &str) -> GGRResult<CallRequest> {
         let mut handle = self.shared_handle.borrow_mut();
         try!(handle.cookie_session(true));
@@ -96,6 +103,8 @@ impl Call {
         CallRequest::new(handle, method, url)
     }
 
+    /// call the do_request function two times. One with digest and the other with basic http
+    /// authentication methods. The first success returnes a CallResponse
     fn request<S: Serialize>(&self, method: CallMethod, path: &str, body: Option<&S>) -> GGRResult<CallResponse> {
         let mut sendurl = self.base.clone();
         // double replace for pathes with three ///.
@@ -169,6 +178,7 @@ impl<'a> Iterator for Headers<'a> {
     }
 }
 
+/// present a http request
 pub struct CallRequest<'a> {
     handle: RefMut<'a, curl::easy::Easy>,
     headers: curl::easy::List,
@@ -176,6 +186,7 @@ pub struct CallRequest<'a> {
 }
 
 impl<'a> CallRequest<'a> {
+    /// create a call request
     fn new(mut handle: RefMut<'a, curl::easy::Easy>,
            method: &CallMethod,
            url: &str)
@@ -273,6 +284,7 @@ impl<'a> CallRequest<'a> {
     }
 }
 
+/// represent a http resonse
 #[derive(Clone, Debug)]
 pub struct CallResponse {
     status: u32,
@@ -348,6 +360,7 @@ impl CallResponse {
         None
     }
 
+    /// give back the body content
     pub fn get_body(&self) -> Option<Vec<u8>> {
         self.body.clone()
     }

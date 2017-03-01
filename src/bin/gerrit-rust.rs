@@ -4,19 +4,23 @@
 extern crate chrono;
 extern crate clap;
 extern crate env_logger;
-extern crate gerritlib;
+extern crate libgerrit;
 extern crate git2;
+extern crate gron;
 #[macro_use]
 extern crate log;
+extern crate regex;
 extern crate rustc_serialize;
+extern crate serde_json;
 extern crate toml_config;
 
 pub mod changes;
 pub mod config;
 pub mod topic;
+pub mod gerritapi;
 
 use clap::App;
-use gerritlib::error::GGRError;
+use libgerrit::error::GGRError;
 use std::error::Error;
 use std::process::exit;
 
@@ -55,6 +59,7 @@ fn main() {
         .subcommand(topic::menu())
         .subcommand(changes::menu())
         .subcommand(config::menu())
+        .subcommand(gerritapi::menu())
         ;
 
     let matches = app.clone().get_matches();
@@ -76,6 +81,7 @@ fn main() {
         ("topic", Some(x)) => { topic::manage(x, config) },
         ("changes", Some(x)) => { changes::manage(x, config) },
         ("config", Some(x)) => { config::manage(x) },
+        ("gerritapi", Some(x)) => { gerritapi::manage(x, config) },
         _ => { let _ = app.print_help(); Ok(()) },
     };
 
