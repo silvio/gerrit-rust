@@ -11,6 +11,7 @@ script:
   - cargo build --release
   - ./misc/testsetup.sh; true
   - cargo test
+  - cd libgerrit && cargo test
 
 addons:
   apt:
