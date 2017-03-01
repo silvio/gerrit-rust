@@ -18,8 +18,8 @@ Some design considarations here.
 
 *   [ ] semver at version 1.0.0. Before this version no semver!
 *   remove external depency to host
-    [ ] git binary
-    [ ] gerrit with download plugin
+    *   [ ] git binary
+    *   [ ] gerrit with download plugin
 *   [x] **0.1.5** Use of curl-rs as http client
 *   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
@@ -33,7 +33,7 @@ Some design considarations here.
         underneath
     *   [x] Authentication (e.g.: digest, basic)
         *   [x] `digest` and `basic` are supported. Current implementation
-            calls both. First on is `basic` and second one is `digest`.
+            calls both. First one is `basic` and second one is `digest`.
 
     *   Consider to configure via config file or put all settings into
         as entries in `.git/config`.  
@@ -95,6 +95,7 @@ Some design considarations here.
         changes a branch with the patch identifier as name, or with `-b` with
         a given branchname.
         [x] **0.1.9** Add tracking information via `--track <branch>` option.
+        [x] **0.1.14** Add `--closed` option to pull closed (merged) topics
 
     *   [ ] `ggr topic reviewer [<BRANCHNAME>] [-r <MAIL>] [-c <MAIL>] [-t <MAIL>]`  
         Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time. The
@@ -110,10 +111,7 @@ Some design considarations here.
         *   [ ] Label `=` means not changing the current review label value,
             only a append a message
 
-*   Other Ideas
-
-    *   [x] **0.1.9** implement a log mechanism to get debugging information
-        via loglevel switch
+* Query changes
 
     *   [x] **0.1.0** `ggr changes query <QUERY>`
         query a searchstring to gerrit server. Use as `QUERY` the same syntax
@@ -125,8 +123,6 @@ Some design considarations here.
 
         *   [x] **0.1.6** Add a `--human` option to print it in human readable
             format.
-
-        *   [ ] Add `--header` to get a header line with field names
 
         *   [x] **0.1.4** Add `--field-list` to get all selectable fields,
             usable for `--fields` option on a second call.
@@ -142,14 +138,77 @@ Some design considarations here.
         *   `ggr changes query status:open is:watched n:2`: query open changes
         which `watched` flag.
 
-    *   [ ] create a helper script for setup of development environment
+* Library features
+
+    *   [x] **0.1.16** cli needs a option to do lowlevel task -> gerritapi
+
+    *   [x] **0.1.0** implement base for http requests and responses
+
+    *   [ ] build a feature complete library to work with gerrit servers
+
+        *   [ ] access endpoint
+        *   [ ] accounts endpoint
+        *   [ ] changes endpoint
+            *   [x] **0.1.16/0.2.0** Create change
+            *   [x] **0.1.16/0.2.0** Query Changes
+            *   [ ] Get Change
+            *   [ ] Get Change Detail
+            *   [ ] Get Topic
+            *   [ ] Set Topic
+            *   [ ] Delete Topic
+            *   [ ] Abandon Change
+            *   [ ] Restore Change
+            *   [ ] Rebase Change
+            *   [ ] Move Change
+            *   [ ] Revert Change
+            *   [ ] Submit Change
+            *   [ ] Changes Submitted Together
+            *   [ ] Publish Draft Change
+            *   [ ] Delete Draft Change
+            *   [ ] Get Included In
+            *   [ ] Index Change
+            *   [ ] List Change Comments
+            *   [ ] List Change Drafts
+            *   [ ] Check Change
+            *   [ ] Fix Change
+        *   [ ] config endpoint
+            *   [x] **0.1.16/0.2.0** Get Version
+            *   [ ] Get Server Info
+            *   [ ] Confirm Email
+            *   [ ] List Caches
+            *   [ ] Cache Operations
+            *   [ ] Get Cache
+            *   [ ] Flush Cache
+            *   [ ] Get Summary
+            *   [ ] List Capabilities
+            *   [ ] List Tasks
+            *   [ ] Get Task
+            *   [ ] Delete Task
+            *   [ ] Get Top Menus
+            *   [ ] Get Default User Preferences
+            *   [ ] Set Default User Preferences
+            *   [ ] Get Default Diff Preferences
+            *   [ ] Set Default Diff Preferences
+        *   [ ] groups endpoint
+        *   [ ] plugins endpoint
+        *   [ ] projects endpoint
+
+*   Other Ideas
+
+    *   [x] **0.1.9** implement a log mechanism to get debugging information
+        via loglevel switch
+
+    *   [x] **0.1.16** do work to support more than one gerrit server
+
+    *   [x] **0.1.14** create a helper script for setup of development
+        environment
 
         *   [x] docker based gerrit server  
-            found docker image `docker pull docker.io/fabric8/gerrit:latest`
-        *   [ ] setup password and username for gerrit
-        *   [ ] autogenerate git repositrories and submodules
-        *   [ ] setup gerrit for this repositories
-        *   [ ] auto push master branches to gerrit
+            found docker image `docker pull openfrontier/gerrit`
+        *   [x] setup password and username for gerrit
+        *   [x] autogenerate git repositrories and submodules
+        *   [x] setup gerrit for this repositories
+        *   [x] auto push master branches to gerrit
 
     *   [ ] `ggr stat [-F <date>] [-T <data>]`  
         some statistics like opened and closed review since a week or between
@@ -175,7 +234,7 @@ Some design considarations here.
     *   Consider to use https://github.com/gsingh93/trace
     *   Consider to use https://github.com/ticki/termion
 
-    *   Document `gerritlib::call` module
+    *   [x] **0.1.11** Document `gerritlib::call` module
 
     *   [x] **0.1.5** Add .travis.yml
 
