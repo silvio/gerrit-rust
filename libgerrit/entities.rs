@@ -178,7 +178,7 @@ pub struct CommitInfo {
     pub web_links: Option<String>,
 }
 
-/// The FileInfo entity contains information about a file in a patch set.
+/// The `FileInfo` entity contains information about a file in a patch set.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct FileInfo0209 {
@@ -198,7 +198,7 @@ pub struct FileInfo0209 {
     pub lines_deleted: Option<String>,
 }
 
-/// The FileInfo entity contains information about a file in a patch set.
+/// The `FileInfo` entity contains information about a file in a patch set.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct FileInfo0213 {
@@ -233,7 +233,7 @@ pub enum FileInfo {
 }
 
 
-/// The RevisionInfo entity contains information about a patch set.
+/// The `RevisionInfo` entity contains information about a patch set.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct RevisionInfo0209 {
@@ -326,9 +326,9 @@ pub struct RevisionInfo0213 {
 #[serde(untagged)]
 pub enum RevisionInfo {
     /// V2.09
-    Gerrit0209(RevisionInfo0209),
+    Gerrit0209(Box<RevisionInfo0209>),
     /// V2.13
-    Gerrit0213(RevisionInfo0213),
+    Gerrit0213(Box<RevisionInfo0213>),
 }
 
 /// The `PushCertificateInfo` entity contains information about a push certificate provided when
@@ -343,7 +343,7 @@ pub struct PushCertificateInfo {
     pub key: GpgKeyInfo,
 }
 
-/// The GpgKeyInfo entity contains information about a GPG public key.
+/// The `GpgKeyInfo` entity contains information about a GPG public key.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GpgKeyInfo {
     /// The 8-char hex GPG key ID.
