@@ -345,10 +345,10 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                         if let Some(ref revisions) = entity.revisions {
                             let reference = match *revisions.get(cur_rev).unwrap() {
                                 entities::RevisionInfo::Gerrit0209(ref x) => {
-                                    &x.fetch.get("http").unwrap().reference
+                                    &x.fetch["http"].reference
                                 },
                                 entities::RevisionInfo::Gerrit0213(ref x) => {
-                                    &x.fetch.get("http").unwrap().reference
+                                    &x.fetch["http"].reference
                                 },
                             };
                             let force_string = if force {"+"} else { "" };
@@ -425,11 +425,11 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
                 if let Some(ref revisions) = element.revisions {
 
                     if let Some(cur_revision) = revisions.get(cur_revision) {
-                        let commit = match cur_revision {
-                            &entities::RevisionInfo::Gerrit0209(ref x) => {
+                        let commit = match *cur_revision {
+                            entities::RevisionInfo::Gerrit0209(ref x) => {
                                 &x.commit
                             },
-                            &entities::RevisionInfo::Gerrit0213(ref x) => {
+                            entities::RevisionInfo::Gerrit0213(ref x) => {
                                 &x.commit
                             }
                         };
