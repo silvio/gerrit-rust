@@ -44,6 +44,15 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                                  .help("Query string")
                              )
                 )
+                .subcommand(SubCommand::with_name("listreviewers")
+                            .about("List reviewers for a {change-id}")
+                            .arg(Arg::with_name("changeid")
+                                 .required(true)
+                                 .takes_value(true)
+                                 .help("receive reviewer list from this {change-id}")
+                                 .index(1)
+                            )
+                )
     )
     .subcommand(SubCommand::with_name("config")
                 .about("Config endpoint")
@@ -121,6 +130,21 @@ fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
                 Err(x) => {
                     println!("Error: {:?}", x);
                 }
+            }
+        },
+
+        ("listreviewers", Some(opt)) => {
+            let changeid = opt.value_of("changeid").unwrap();
+
+            match gerrit.changes().get_reviewers(changeid) {
+                Ok(reviewers) => {
+                    for reviewer in reviewers {
+                        println!("* {:?}", reviewer);
+                    }
+                },
+                Err(x) => {
+                    println!("Error: {:?}", x);
+                },
             }
         },
 
