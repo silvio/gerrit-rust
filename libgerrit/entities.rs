@@ -10,9 +10,27 @@
 
 use std::collections::HashMap;
 
-/// The `AccountInfo` entity contains information about an account
+/// The `AccountInfo0209` entity contains information about an account
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct AccountInfo {
+#[serde(deny_unknown_fields)]
+pub struct AccountInfo0209 {
+    /// The numeric ID of the account
+    pub _account_id: u64,
+    /// The full name of the user.
+    /// Only set if detailed account information is requested
+    pub name: Option<String>,
+    /// The email address the user prefers to be contacted through.
+    /// Only set if detailed account information is requested
+    pub email: Option<String>,
+    /// The username of the user.
+    /// Only set if detailed account information is requested
+    pub username: Option<String>,
+}
+
+/// The `AccountInfo0213` entity contains information about an account
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct AccountInfo0213 {
     /// The numeric ID of the account
     pub _account_id: Option<u64>,
     /// The full name of the user. Only set if detailed account information is requested. See
@@ -36,6 +54,16 @@ pub struct AccountInfo {
     /// that is returned.  
     /// (optional, not set if false)
     pub _more_accounts: Option<String>,
+}
+
+/// `AccountInfo` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum AccountInfo {
+    /// V2.09
+    Gerrit0209(AccountInfo0209),
+    /// V2.13
+    Gerrit0213(AccountInfo0213),
 }
 
 /// The `ActionInfo` entity describes a REST API call the client can make to manipulate a resource.
@@ -573,3 +601,75 @@ pub struct MergeInput {
     // TODO: only recursive, resolve, simple-two-way-in-core, ours or theirs allowed
     pub strategy: Option<String>,
 }
+
+/// The `ReviewerInfo0209` entity contains information about a reviewer and its votes on a change.
+///
+/// `ReviewerInfo0209` has the same fields as AccountInfo and includes detailed account
+/// information.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewerInfo0209 {
+    /// The numeric ID of the account
+    pub _account_id: u64,
+    /// The full name of the user.
+    /// Only set if detailed account information is requested
+    pub name: Option<String>,
+    /// The email address the user prefers to be contacted through.
+    /// Only set if detailed account information is requested
+    pub email: Option<String>,
+    /// The username of the user.
+    /// Only set if detailed account information is requested
+    pub username: Option<String>,
+    /// gerritcodereview#reviewer
+    kind: String,
+    /// The approvals of the reviewer as a map that maps the label names to the approval values
+    /// ("-2", "-1", "0", "+1", "+2")
+    approvals: HashMap<String, String>,
+}
+
+/// The `ReviewerInfo0213` entity contains information about a reviewer and its votes on a change.
+///
+/// `ReviewerInfo0213` has the same fields as `AccountInfo0213` and includes detailed account
+/// information.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewerInfo0213 {
+    /// The numeric ID of the account
+    pub _account_id: Option<u64>,
+    /// The full name of the user. Only set if detailed account information is requested. See
+    /// option DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
+    /// (optional)
+    pub name: Option<String>,
+    /// The email address the user prefers to be contacted through. Only set if detailed account
+    /// information is requested. See option DETAILED_ACCOUNTS for change queries and options
+    /// DETAILS and ALL_EMAILS for account queries.  
+    /// (optional)
+    pub email: Option<String>,
+    /// A list of the secondary email addresses of the user. Only set for account queries when the
+    /// ALL_EMAILS option is set.  
+    /// (optional)
+    pub secondary_emails: Option<Vec<String>>,
+    /// The username of the user. Only set if detailed account information is requested. See option
+    /// DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
+    /// (optional)
+    pub username: Option<String>,
+    /// Whether the query would deliver more results if not limited. Only set on the last account
+    /// that is returned.  
+    /// (optional, not set if false)
+    pub _more_accounts: Option<String>,
+    /// The approvals of the reviewer as a map that maps the label names to the approval values
+    /// (“-2”, “-1”, “0”, “+1”, “+2”)
+    pub approvals: HashMap<String, String>,
+}
+
+/// `ReviewerInfo` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ReviewerInfo {
+    /// V2.09
+    Gerrit0209(ReviewerInfo0209),
+    /// V2.13
+    Gerrit0213(ReviewerInfo0213),
+}
+
+

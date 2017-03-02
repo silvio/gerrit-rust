@@ -149,8 +149,8 @@ Some design considarations here.
         *   [ ] access endpoint
         *   [ ] accounts endpoint
         *   [ ] changes endpoint
-            *   [x] **0.1.16/0.2.0** Create change
-            *   [x] **0.1.16/0.2.0** Query Changes
+            *   [x] **0.1.16** Create change
+            *   [x] **0.1.16** Query Changes
             *   [ ] Get Change
             *   [ ] Get Change Detail
             *   [ ] Get Topic
@@ -171,6 +171,44 @@ Some design considarations here.
             *   [ ] List Change Drafts
             *   [ ] Check Change
             *   [ ] Fix Change
+        *   [ ] reviewer endpoint
+            *   [x] **0.1.17** List Reviewers
+            *   [ ] Suggest Reviewers
+            *   [ ] Get Reviewer
+            *   [ ] Add Reviewer
+            *   [ ] Delete Reviewer
+            *   [ ] List Votes
+            *   [ ] Delete Vote
+        *   [ ] Revision Endpoints
+            *   [ ] Get Commit
+            *   [ ] Get Revision Actions
+            *   [ ] Get Review
+            *   [ ] Get Related Changes
+            *   [ ] Set Review
+            *   [ ] Rebase Revision
+            *   [ ] Submit Revision
+            *   [ ] Publish Draft Revision
+            *   [ ] Delete Draft Revision
+            *   [ ] Get Patch
+            *   [ ] Get Mergeable
+            *   [ ] Get Submit Type
+            *   [ ] Test Submit Type
+            *   [ ] Test Submit Rule
+            *   [ ] List Revision Drafts
+            *   [ ] Create Draft
+            *   [ ] Get Draft
+            *   [ ] Update Draft
+            *   [ ] Delete Draft
+            *   [ ] List Revision Comments
+            *   [ ] Get Comment
+            *   [ ] List Files
+            *   [ ] Get Content
+            *   [ ] Download Content
+            *   [ ] Get Diff
+            *   [ ] Get Blame
+            *   [ ] Set Reviewed
+            *   [ ] Delete Reviewed
+            *   [ ] Cherry Pick Revision
         *   [ ] config endpoint
             *   [x] **0.1.16/0.2.0** Get Version
             *   [ ] Get Server Info

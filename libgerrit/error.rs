@@ -10,6 +10,7 @@ use url;
 #[derive(Debug)]
 pub enum GerritError {
     ChangeInputProblem,
+    GetReviewerListProblem(String),
     GerritApi(u32, String),
 }
 

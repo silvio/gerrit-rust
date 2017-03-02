@@ -111,4 +111,28 @@ impl Changes {
             }
         }
     }
+
+    /// api function `GET /changes/{change-id}/reviewers/'
+    pub fn get_reviewers(&self, changeid: &str) -> GGRResult<Vec<entities::ReviewerInfo>> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid is empty".into())));
+        }
+
+        let (path, _) = self.build_url();
+
+        let path = format!("{}/{}/reviewers/", path, changeid);
+
+        match self.call.get(&path) {
+            Ok(cr) => {
+                if cr.ok() {
+                    cr.convert::<Vec<entities::ReviewerInfo>>()
+                } else {
+                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
+                }
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("Problem '{}' with receiving reviewer list for {}", x, changeid)))
+            }
+        }
+    }
 }
