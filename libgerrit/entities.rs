@@ -604,7 +604,7 @@ pub struct MergeInput {
 
 /// The `ReviewerInfo0209` entity contains information about a reviewer and its votes on a change.
 ///
-/// `ReviewerInfo0209` has the same fields as AccountInfo and includes detailed account
+/// `ReviewerInfo0209` has the same fields as `AccountInfo` and includes detailed account
 /// information.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
@@ -759,9 +759,12 @@ pub struct ReviewerInput0213 {
     pub confirmed: Option<bool>,
 }
 
+/// `ReviewerInput` differs between Gerrit server/protocoll versions. This enum hold them together.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(untagged)]
 pub enum ReviewerInput {
+    /// V2.09
     Gerrit0209(ReviewerInput0209),
+    /// V2.13
     Gerrit0213(ReviewerInput0213),
 }

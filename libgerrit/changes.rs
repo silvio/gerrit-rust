@@ -147,7 +147,7 @@ impl Changes {
         }
 
         use config;
-        let config = config::Config::new(&self.call.get_base());
+        let config = config::Config::new(self.call.get_base());
         if let Ok(version) = config.get_version() {
             let (path, _) = self.build_url();
             let path = format!("{}/{}/reviewers", path, changeid);
@@ -181,7 +181,7 @@ impl Changes {
             }
         }
 
-        return Err(GGRError::General(format!("Could not determine gerrit server version")));
+        Err(GGRError::General("Could not determine gerrit server version".into()))
     }
 
     /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
@@ -196,12 +196,12 @@ impl Changes {
         match self.call.delete(&path) {
             Ok(cr) => {
                 match cr.status() {
-                    200 ... 204 => { return Ok(()); },
-                    404 => { return Err(GGRError::GerritApiError(GerritError::ReviewerNotFound)); },
-                    _ => { return Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap()))); },
-                };
+                    200 ... 204 => { Ok(()) },
+                    404 => { Err(GGRError::GerritApiError(GerritError::ReviewerNotFound)) },
+                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap()))) },
+                }
             },
-            Err(x) => { return Err(GGRError::General(format!("Problem '{}' with deleting reviewer for {}", x, changeid))); },
+            Err(x) => { Err(GGRError::General(format!("Problem '{}' with deleting reviewer for {}", x, changeid))) },
         }
     }
 }
