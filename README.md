@@ -152,8 +152,8 @@ Some design considarations here.
         *   [ ] access endpoint
         *   [ ] accounts endpoint
         *   [ ] changes endpoint
-            *   [x] **0.1.16** Create change
-            *   [x] **0.1.16** Query Changes
+            *   [x] **0.2.0** Create change
+            *   [x] **0.2.0** Query Changes
             *   [ ] Get Change
             *   [ ] Get Change Detail
             *   [ ] Get Topic
@@ -175,11 +175,11 @@ Some design considarations here.
             *   [ ] Check Change
             *   [ ] Fix Change
         *   [ ] reviewer endpoint
-            *   [x] **0.1.17** List Reviewers
+            *   [x] **0.2.1** List Reviewers
             *   [ ] Suggest Reviewers
-            *   [x] **0.1.17** Get Reviewer
-            *   [x] **0.1.17** Add Reviewer
-            *   [x] **0.1.17** Delete Reviewer
+            *   [x] **0.2.1** Get Reviewer
+            *   [x] **0.2.1** Add Reviewer
+            *   [x] **0.2.1** Delete Reviewer
             *   [ ] List Votes
             *   [ ] Delete Vote
         *   [ ] Revision Endpoints
@@ -213,7 +213,7 @@ Some design considarations here.
             *   [ ] Delete Reviewed
             *   [ ] Cherry Pick Revision
         *   [ ] config endpoint
-            *   [x] **0.1.16/0.2.0** Get Version
+            *   [x] **0.2.0** Get Version
             *   [ ] Get Server Info
             *   [ ] Confirm Email
             *   [ ] List Caches
