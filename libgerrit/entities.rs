@@ -15,7 +15,7 @@ use std::collections::HashMap;
 #[serde(deny_unknown_fields)]
 pub struct AccountInfo0209 {
     /// The numeric ID of the account
-    pub _account_id: u64,
+    pub _account_id: Option<u64>,
     /// The full name of the user.
     /// Only set if detailed account information is requested
     pub name: Option<String>,
@@ -610,7 +610,7 @@ pub struct MergeInput {
 #[serde(deny_unknown_fields)]
 pub struct ReviewerInfo0209 {
     /// The numeric ID of the account
-    pub _account_id: u64,
+    pub _account_id: Option<u64>,
     /// The full name of the user.
     /// Only set if detailed account information is requested
     pub name: Option<String>,
@@ -624,7 +624,7 @@ pub struct ReviewerInfo0209 {
     kind: String,
     /// The approvals of the reviewer as a map that maps the label names to the approval values
     /// ("-2", "-1", "0", "+1", "+2")
-    approvals: HashMap<String, String>,
+    pub approvals: ReviewerInfoApprovals,
 }
 
 /// The `ReviewerInfo0213` entity contains information about a reviewer and its votes on a change.
@@ -659,7 +659,19 @@ pub struct ReviewerInfo0213 {
     pub _more_accounts: Option<String>,
     /// The approvals of the reviewer as a map that maps the label names to the approval values
     /// (“-2”, “-1”, “0”, “+1”, “+2”)
-    pub approvals: HashMap<String, String>,
+    pub approvals: ReviewerInfoApprovals,
+}
+
+/// Helper struct for `ReviewerInfo` of `Aproval` information
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewerInfoApprovals {
+    /// verified with
+    #[serde(rename="Verified")]
+    pub verified: Option<i64>,
+    /// code review number
+    #[serde(rename="Code-Review")]
+    pub codereview: Option<i64>,
 }
 
 /// `ReviewerInfo` differs between Gerrit server/protocoll versions. This enum hold them together.
@@ -672,4 +684,84 @@ pub enum ReviewerInfo {
     Gerrit0213(ReviewerInfo0213),
 }
 
+/// The `AddReviewerResult` entity describes the result of adding a reviewer to a change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct AddReviewerResult0209 {
+    /// The newly added reviewers as a list of ReviewerInfo entities
+    pub reviewers: Option<Vec<ReviewerInfo0209>>,
+    /// Error message explaining why the reviewer could not be added.
+    /// If a group was specified in the input and an error is returned, it means that none of the
+    /// members were added as reviewer.
+    pub error: Option<String>,
+    /// Whether adding the reviewer requires confirmation
+    pub confirm: Option<bool>,
+}
 
+/// The `AddReviewerResult` entity describes the result of adding a reviewer to a change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct AddReviewerResult0213 {
+    /// Value of the reviewer field from ReviewerInput set while adding the reviewer
+    pub input: String,
+    /// The newly added reviewers as a list of ReviewerInfo entities
+    pub reviewers: Option<Vec<ReviewerInfo0213>>,
+    /// The newly CCed accounts as a list of ReviewerInfo entities. This field will only appear if
+    /// the requested state for the reviewer was CC **and** NoteDb is enabled on the server
+    pub ccs: Option<Vec<ReviewerInfo>>,
+    /// Error message explaining why the reviewer could not be added.
+    /// If a group was specified in the input and an error is returned, it means that none of the
+    /// members were added as reviewer.
+    pub error: Option<String>,
+    /// Whether adding the reviewer requires confirmation.
+    pub confirm: Option<bool>,
+}
+
+/// `AddReviewerResult` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum AddReviewerResult {
+    /// V2.09
+    Gerrit0209(AddReviewerResult0209),
+    /// V2.09
+    Gerrit0213(AddReviewerResult0213),
+}
+
+/// The `ReviewerInput` entity contains information for adding a reviewer to a change.
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+pub struct ReviewerInput0209 {
+    /// The ID of one account that should be added as reviewer or the ID of one group for which all
+    /// members should be added as reviewers.
+    /// If an ID identifies both an account and a group, only the account is added as reviewer to
+    /// the change.
+    pub reviewer: String,
+    /// Whether adding the reviewer is confirmed.
+    /// The Gerrit server may be configured to require a confirmation when adding a group as
+    /// reviewer that has many members.
+    pub confirmed: Option<bool>,
+}
+
+/// The `ReviewerInput` entity contains information for adding a reviewer to a change
+#[derive(Deserialize, Serialize, Debug, Clone, Default)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewerInput0213 {
+    /// The ID of one account that should be added as reviewer or the ID of one group for which all
+    /// members should be added as reviewers.
+    /// If an ID identifies both an account and a group, only the account is added as reviewer to
+    /// the change.
+    pub reviewer: String,
+    /// Add reviewer in this state. Possible reviewer states are REVIEWER and CC. If not given,
+    /// defaults to REVIEWER.
+    pub state: Option<String>,
+    /// Whether adding the reviewer is confirmed.
+    /// The Gerrit server may be configured to require a confirmation when adding a group as
+    /// reviewer that has many members.
+    pub confirmed: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ReviewerInput {
+    Gerrit0209(ReviewerInput0209),
+    Gerrit0213(ReviewerInput0213),
+}

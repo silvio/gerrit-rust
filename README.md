@@ -174,9 +174,9 @@ Some design considarations here.
         *   [ ] reviewer endpoint
             *   [x] **0.1.17** List Reviewers
             *   [ ] Suggest Reviewers
-            *   [ ] Get Reviewer
-            *   [ ] Add Reviewer
-            *   [ ] Delete Reviewer
+            *   [x] **0.1.17** Get Reviewer
+            *   [x] **0.1.17** Add Reviewer
+            *   [x] **0.1.17** Delete Reviewer
             *   [ ] List Votes
             *   [ ] Delete Vote
         *   [ ] Revision Endpoints
