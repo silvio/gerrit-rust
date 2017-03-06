@@ -63,7 +63,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
 /// Currently implemented sub commands:
 ///
 /// * query
-pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("query", Some(y)) => { query(y, config) },
         _ => {
@@ -74,7 +74,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 }
 
 /// create, call and prints queries to a gerrit server
-fn query(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn query(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
     let mut changes = gerrit.changes();
 

@@ -44,6 +44,15 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                                  .help("Query string")
                              )
                 )
+                .subcommand(SubCommand::with_name("listreviewers")
+                            .about("List reviewers for a {change-id}")
+                            .arg(Arg::with_name("changeid")
+                                 .required(true)
+                                 .takes_value(true)
+                                 .help("receive reviewer list from this {change-id}")
+                                 .index(1)
+                            )
+                )
     )
     .subcommand(SubCommand::with_name("config")
                 .about("Config endpoint")
@@ -54,7 +63,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
     )
 }
 
-pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("changes", Some(y)) => { changes(y, config) },
         ("config", Some(y)) => { configs(y, config) },
@@ -65,7 +74,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     }
 }
 
-fn configs(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn configs(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
 
     if y.is_present("version") {
@@ -78,7 +87,7 @@ fn configs(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     Ok(())
 }
 
-fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn changes(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
 
     match y.subcommand() {
@@ -121,6 +130,21 @@ fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
                 Err(x) => {
                     println!("Error: {:?}", x);
                 }
+            }
+        },
+
+        ("listreviewers", Some(opt)) => {
+            let changeid = opt.value_of("changeid").unwrap();
+
+            match gerrit.changes().get_reviewers(changeid) {
+                Ok(reviewers) => {
+                    for reviewer in reviewers {
+                        println!("* {:?}", reviewer);
+                    }
+                },
+                Err(x) => {
+                    println!("Error: {:?}", x);
+                },
             }
         },
 

@@ -94,15 +94,18 @@ Some design considarations here.
         fetch latest version of commits for a topic. Create for all
         changes a branch with the patch identifier as name, or with `-b` with
         a given branchname.
-        [x] **0.1.9** Add tracking information via `--track <branch>` option.
-        [x] **0.1.14** Add `--closed` option to pull closed (merged) topics
+        * [x] **0.1.9** Add tracking information via `--track <branch>` option.
+        * [x] **0.1.14** Add `--closed` option to pull closed (merged) topics
 
-    *   [ ] `ggr topic reviewer [<BRANCHNAME>] [-r <MAIL>] [-c <MAIL>] [-t <MAIL>]`  
-        Add reviewer (`-r`), CC: (`-c`) or TO: (`-t`) at topic push time. The
-        information is put to branch config like `config.BRANCHNAME.ggr-re
-        MAIL`. Config lineentries start with ggr-\[cc/to/re\]. Without any
-        options the current reviewer/to/cc showed for current branch. Without
-        BRANCHNAME te current branch is taken.
+    *   [x] **0.1.17** `ggr topic reviewer [<TOPIC>] [-r <+/-MAIL>,...]`  
+        Add(+) or remove(-) reviewer (`-r`) from topic. Without an option we
+        receive a list of all reviewers on this topic.
+        * [x] **0.1.17** `-v`/`--verbose` for detailed view of approvals
+        * [ ] Without TOPIC it used the actual topic (!=master) on base and
+              submodules.
+        * [ ] Add `--format` option for formating of output. Using of rust
+              variable and formating informations like `{email}`,
+              `{email:15.2}`.
 
     *   [ ] `ggr topic verify [<TOPICNAME>] <LABEL> [<MESSAGE>]`
         Verify all commits of a topic TOPICNAME with a label LABEL
@@ -140,7 +143,7 @@ Some design considarations here.
 
 * Library features
 
-    *   [x] **0.1.16** cli needs a option to do lowlevel task -> gerritapi
+    *   [x] **0.1.16** cli needs a subcommand to do lowlevel task -> gerritapi
 
     *   [x] **0.1.0** implement base for http requests and responses
 
@@ -149,8 +152,8 @@ Some design considarations here.
         *   [ ] access endpoint
         *   [ ] accounts endpoint
         *   [ ] changes endpoint
-            *   [x] **0.1.16/0.2.0** Create change
-            *   [x] **0.1.16/0.2.0** Query Changes
+            *   [x] **0.1.16** Create change
+            *   [x] **0.1.16** Query Changes
             *   [ ] Get Change
             *   [ ] Get Change Detail
             *   [ ] Get Topic
@@ -171,6 +174,44 @@ Some design considarations here.
             *   [ ] List Change Drafts
             *   [ ] Check Change
             *   [ ] Fix Change
+        *   [ ] reviewer endpoint
+            *   [x] **0.1.17** List Reviewers
+            *   [ ] Suggest Reviewers
+            *   [x] **0.1.17** Get Reviewer
+            *   [x] **0.1.17** Add Reviewer
+            *   [x] **0.1.17** Delete Reviewer
+            *   [ ] List Votes
+            *   [ ] Delete Vote
+        *   [ ] Revision Endpoints
+            *   [ ] Get Commit
+            *   [ ] Get Revision Actions
+            *   [ ] Get Review
+            *   [ ] Get Related Changes
+            *   [ ] Set Review
+            *   [ ] Rebase Revision
+            *   [ ] Submit Revision
+            *   [ ] Publish Draft Revision
+            *   [ ] Delete Draft Revision
+            *   [ ] Get Patch
+            *   [ ] Get Mergeable
+            *   [ ] Get Submit Type
+            *   [ ] Test Submit Type
+            *   [ ] Test Submit Rule
+            *   [ ] List Revision Drafts
+            *   [ ] Create Draft
+            *   [ ] Get Draft
+            *   [ ] Update Draft
+            *   [ ] Delete Draft
+            *   [ ] List Revision Comments
+            *   [ ] Get Comment
+            *   [ ] List Files
+            *   [ ] Get Content
+            *   [ ] Download Content
+            *   [ ] Get Diff
+            *   [ ] Get Blame
+            *   [ ] Set Reviewed
+            *   [ ] Delete Reviewed
+            *   [ ] Cherry Pick Revision
         *   [ ] config endpoint
             *   [x] **0.1.16/0.2.0** Get Version
             *   [ ] Get Server Info

@@ -3,6 +3,7 @@ use clap::{self, SubCommand, App, Arg};
 use git2::Repository;
 use git2::BranchType;
 use std::collections::HashMap;
+use std::error::Error;
 use std::io::{self, Write};
 use std::process::Command;
 use libgerrit::error::GGRError;
@@ -83,6 +84,28 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .takes_value(true)
                 )
     )
+    .subcommand(SubCommand::with_name("reviewer")
+                .about("manage reviewer of a topic")
+                .arg(Arg::with_name("topicname")
+                     .help("topic name for reviewer manipulation")
+                     .required(true)
+                     .takes_value(true)
+                     .index(1)
+                 )
+                .arg(Arg::with_name("reviewers")
+                     .help("List of reviewers, comma separated. '~' in front of mailaddress remove them like '~admin@example.com'")
+                     .long("reviewer")
+                     .short("r")
+                     .alias("reviewers")
+                     .takes_value(true)
+                     .multiple(true)
+                )
+                .arg(Arg::with_name("verbose")
+                     .help("all reviewers with verify information")
+                     .long("verbose")
+                     .short("v")
+                )
+    )
 }
 
 /// manage subfunction of `topic` command
@@ -92,12 +115,13 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
 /// * create
 /// * forget
 /// * pull
-pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
         ("fetch", Some(y)) => { fetch(y, config) },
         ("checkout", Some(y)) => { checkout(y, config) },
+        ("reviewer", Some(y)) => { reviewer(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -227,7 +251,7 @@ fn test_split_repo_reference() {
 }
 
 /// fetch topics
-fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn fetch(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if !config.is_root() {
         return Err(GGRError::General("You have to run topic::fetch on the main/root repository".into()));
     }
@@ -243,7 +267,7 @@ fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 }
 
 /// checkout topics
-fn checkout(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn checkout(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if !config.is_root() {
         return Err(GGRError::General("You have to run topic::checkout on the main/root repository".into()));
     }
@@ -252,6 +276,117 @@ fn checkout(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     checkout_topic(branchname)
 }
 
+/// show and manipulate reviewer
+fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let topicname = y.value_of("topicname").expect("you need a topicname");
+    let verbose = y.is_present("verbose");
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+
+        // manipulate reviewer for topic
+        if let Some(ref reviewerlist) = y.values_of_lossy("reviewers") {
+            for ci in cis {
+                for reviewer in reviewerlist {
+                    let remove = reviewer.starts_with('~');
+
+                    if remove {
+                        let reviewer = &reviewer[1..];
+                        if let Err(res) = gerrit.changes().delete_reviewer(&ci.id, reviewer) {
+                            match res {
+                                GGRError::GerritApiError(ref x) => {
+                                    println!("{}, {}", reviewer, x.description());
+                                },
+                                x => { println!("Other error: {:?}", x);}
+                            };
+                        } else {
+                            println!("{}: removed", reviewer);
+                        };
+                    } else {
+                        match gerrit.changes().add_reviewer(&ci.id, reviewer) {
+                            Ok(addreviewerresult) => {
+                                match addreviewerresult {
+                                    entities::AddReviewerResult::Gerrit0209(g) => {
+                                        match g.reviewers {
+                                            Some(reviewerret) => {
+                                                for r in reviewerret {
+                                                    println!("{}, {}, {}: added",
+                                                             r.name.unwrap_or("unkown name".into()),
+                                                             r.email.unwrap_or("unkown mail".into()),
+                                                             r._account_id.unwrap_or(99999999));
+                                                }
+                                            },
+                                            None => {
+                                                println!("Not added: {}", g.error.unwrap_or("No error message from gerrit server provided".into()));
+                                            },
+                                        }
+                                    },
+                                    entities::AddReviewerResult::Gerrit0213(g) => {
+                                        match g.reviewers {
+                                            Some(reviewerret) => {
+                                                for r in reviewerret {
+                                                    println!("{}, {}, {}: added",
+                                                             r.name.unwrap_or("unkown name".into()),
+                                                             r.email.unwrap_or("unkown mail".into()),
+                                                             r._account_id.unwrap_or(99999999));
+                                                }
+                                            },
+                                            None => {
+                                                println!("Not added: {}", g.error.unwrap_or("No error message from gerrit server provided".into()));
+                                            },
+                                        }
+                                    },
+                                };
+                            },
+                            Err(e) => {
+                                println!("Problem to add '{}' as reviewer: {}", reviewer, e);
+                            },
+                        }
+                    }
+                }
+            }
+
+            return Ok(());
+        }
+
+        // only list reviewers
+        for ci in cis {
+            println!("* reviewer for {}:", ci.subject);
+            if let Ok(reviewers) = gerrit.changes().get_reviewers(&ci.id) {
+                let mut reviewer_list = Vec::new();
+                for reviewer in reviewers {
+                    let (name, username, email, approval) = match reviewer {
+                        entities::ReviewerInfo::Gerrit0209(g) => {
+                            (g.name.unwrap_or_else(|| "unknown".into()), g.username.unwrap_or_else(|| "unknown".into()), g.email.unwrap_or_else(|| "unknown".into()), g.approvals)
+                        },
+                        entities::ReviewerInfo::Gerrit0213(g) => {
+                            (g.name.unwrap_or_else(|| "unknown".into()), g.username.unwrap_or_else(|| "unknown".into()), g.email.unwrap_or_else(|| "unknown".into()), g.approvals)
+                        },
+                    };
+
+                    reviewer_list.push(name.clone());
+
+                    if verbose {
+                        println!("  * {:2}/{:2} {:15.15} {:15.15} {}",
+                                 approval.verified.unwrap_or(0), approval.codereview.unwrap_or(0),
+                                 name, username, email);
+                    }
+                }
+                if ! verbose {
+                    print!("  ");
+                    for reviewer in reviewer_list {
+                        print!("{}, ", reviewer);
+                    }
+                    println!("");
+                }
+            }
+        }
+    } else {
+        println!("no changes for '{}' found", topicname);
+    }
+
+    Ok(())
+}
 
 /// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
 ///

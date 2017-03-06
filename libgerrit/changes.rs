@@ -58,12 +58,14 @@ impl Changes {
         }
     }
 
+    /// This function is subject of future changes
     pub fn add_query_part<S>(&mut self, q: S) -> &mut Changes
     where S: Into<String> {
         self.querylist.push(q.into());
         self
     }
 
+    /// This function is subject of future changes
     pub fn add_label<S>(&mut self, l: S) -> &mut Changes
     where S: Into<String> {
         self.labellist.push(l.into());
@@ -71,6 +73,8 @@ impl Changes {
     }
 
     /// api function 'GET /changes/'
+    ///
+    /// This function is subject of future changes
     pub fn query_changes(&mut self) -> GGRResult<Vec<entities::ChangeInfo>> {
         let (path, query) = self.build_url();
 
@@ -109,6 +113,95 @@ impl Changes {
             Err(x) => {
                 Err(GGRError::General(format!("Problem '{}' with change create: {:?}", x, ci)))
             }
+        }
+    }
+
+    /// api function `GET /changes/{change-id}/reviewers/'
+    pub fn get_reviewers(&self, changeid: &str) -> GGRResult<Vec<entities::ReviewerInfo>> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid is empty".into())));
+        }
+
+        let (path, _) = self.build_url();
+
+        let path = format!("{}/{}/reviewers/", path, changeid);
+
+        match self.call.get(&path) {
+            Ok(cr) => {
+                if cr.ok() {
+                    cr.convert::<Vec<entities::ReviewerInfo>>()
+                } else {
+                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
+                }
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("Problem '{}' with receiving reviewer list for {}", x, changeid)))
+            }
+        }
+    }
+
+    /// api function 'POST /changes/{change-id}/reviewers'
+    pub fn add_reviewer(&self, changeid: &str, reviewer: &str) -> GGRResult<entities::AddReviewerResult> {
+        if changeid.is_empty() || reviewer.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid or reviewer is empty".into())));
+        }
+
+        use config;
+        let config = config::Config::new(self.call.get_base());
+        if let Ok(version) = config.get_version() {
+            let (path, _) = self.build_url();
+            let path = format!("{}/{}/reviewers", path, changeid);
+
+            let reviewerinput = if version.starts_with("2.9") {
+                entities::ReviewerInput::Gerrit0209(entities::ReviewerInput0209 {
+                    reviewer: reviewer.into(),
+                    confirmed: None,
+                })
+            } else if version.starts_with("2.13") {
+                entities::ReviewerInput::Gerrit0213(entities::ReviewerInput0213 {
+                    reviewer: reviewer.into(),
+                    state: None,
+                    confirmed: None,
+                })
+            } else {
+                return Err(GGRError::General(format!("Only support for gerit version 2.9 and 2.13. Yor server is {}",version)));
+            };
+
+            match self.call.post(&path, &reviewerinput) {
+                Ok(cr) => {
+                    if cr.ok() {
+                        return cr.convert::<entities::AddReviewerResult>();
+                    } else {
+                        return Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())));
+                    }
+                },
+                Err(x) => {
+                    return Err(GGRError::General(format!("Problem '{}' with add reviewer for {}", x, changeid)));
+                }
+            }
+        }
+
+        Err(GGRError::General("Could not determine gerrit server version".into()))
+    }
+
+    /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
+    pub fn delete_reviewer(&self, changeid: &str, reviewer: &str) -> GGRResult<()> {
+        if changeid.is_empty() || reviewer.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid or reviewer is empty".into())));
+        }
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/reviewers/{}", path, changeid, reviewer);
+
+        match self.call.delete(&path) {
+            Ok(cr) => {
+                match cr.status() {
+                    200 ... 204 => { Ok(()) },
+                    404 => { Err(GGRError::GerritApiError(GerritError::ReviewerNotFound)) },
+                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap()))) },
+                }
+            },
+            Err(x) => { Err(GGRError::General(format!("Problem '{}' with deleting reviewer for {}", x, changeid))) },
         }
     }
 }

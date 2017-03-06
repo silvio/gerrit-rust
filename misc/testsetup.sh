@@ -5,7 +5,7 @@ SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 
 WORKDIR="${WORKDIR:-GERRIT}"
 SITE="${SCRIPT_DIR}/${WORKDIR}"
-DOCKERIMAGE="${DOCKERIMAGE:-openfrontier/gerrit:latest}"
+DOCKERIMAGE="${DOCKERIMAGE:-openfrontier/gerrit:2.13.5}"
 
 
 cleanup() {

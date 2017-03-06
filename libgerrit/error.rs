@@ -7,10 +7,27 @@ use serde_json;
 use std;
 use url;
 
-#[derive(Debug)]
-pub enum GerritError {
-    ChangeInputProblem,
-    GerritApi(u32, String),
+quick_error! {
+    #[derive(Debug)]
+    pub enum GerritError {
+        ChangeInputProblem {
+            display("Problem with ChangeInput")
+        }
+
+        GetReviewerListProblem(r: String) {
+            display("ProblemWithReviewer: {}", r)
+        }
+
+        /// The reviewer isn't found
+        ReviewerNotFound {
+            description("Reviewer not found")
+            display("Reviewer not found")
+        }
+
+        GerritApi(status: u32, text: String) {
+            display("HTTP status: {}, text: {}", status, text)
+        }
+    }
 }
 
 quick_error! {
@@ -27,6 +44,10 @@ quick_error! {
         General(err: String) {
             description(err)
             from()
+        }
+        HTTPError(status: u32) {
+            description("HTTP Error")
+            display("HTTP not success ({})", status)
         }
         Git2(err: git2::Error) {
             description(err.message())
