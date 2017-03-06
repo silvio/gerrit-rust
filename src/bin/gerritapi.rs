@@ -63,7 +63,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
     )
 }
 
-pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("changes", Some(y)) => { changes(y, config) },
         ("config", Some(y)) => { configs(y, config) },
@@ -74,7 +74,7 @@ pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     }
 }
 
-fn configs(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn configs(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
 
     if y.is_present("version") {
@@ -87,7 +87,7 @@ fn configs(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
     Ok(())
 }
 
-fn changes(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn changes(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
 
     match y.subcommand() {

@@ -115,7 +115,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
 /// * create
 /// * forget
 /// * pull
-pub fn manage(x: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
@@ -251,7 +251,7 @@ fn test_split_repo_reference() {
 }
 
 /// fetch topics
-fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn fetch(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if !config.is_root() {
         return Err(GGRError::General("You have to run topic::fetch on the main/root repository".into()));
     }
@@ -267,7 +267,7 @@ fn fetch(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 }
 
 /// checkout topics
-fn checkout(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn checkout(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if !config.is_root() {
         return Err(GGRError::General("You have to run topic::checkout on the main/root repository".into()));
     }
@@ -277,7 +277,7 @@ fn checkout(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
 }
 
 /// show and manipulate reviewer
-fn reviewer(y: &clap::ArgMatches, config: config::Config) -> GGRResult<()> {
+fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let topicname = y.value_of("topicname").expect("you need a topicname");
     let verbose = y.is_present("verbose");
 
