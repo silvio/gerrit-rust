@@ -123,14 +123,13 @@ impl Call {
             }
 
             try!(call_request.handle.http_auth(am));
-            match call_request.send() {
-                Ok(call_response) => {
-                    return Ok(call_response);
-                },
-                Err(_) => {
-                    continue
-                }
-            };
+            let call_response = call_request.send()?;
+
+            if call_response.status() == 401 /* Unauthorized */ {
+                debug!("status 401 ... try other http method if available");
+                continue;
+            }
+            return Ok(call_response);
         }
 
         Err(GGRError::General("No Authentication algorithm found for your gerrit server. 'basic' and 'digest' tested".into()))
@@ -262,8 +261,6 @@ impl<'a> CallRequest<'a> {
         let mut out = vec![];
         let mut rv = self.send_into(&mut out)?;
 
-        let mut valid = false;
-
         debug!("return-from-server: {:?}", rv);
 
         // cut first 4 bytes from output stream
@@ -272,15 +269,10 @@ impl<'a> CallRequest<'a> {
         // <https://gerrit-documentation.storage.googleapis.com/Documentation/2.12.3/rest-api.html#output>
         if out.starts_with(b")]}'") {
             out = out[4..].into();
-            valid = true;
         }
 
-        if valid {
-            rv.body = Some(out);
-            Ok(rv)
-        } else {
-            Err(GGRError::General(String::from_utf8_lossy(&out).into_owned().trim().into()))
-        }
+        rv.body = Some(out);
+        Ok(rv)
     }
 }
 
