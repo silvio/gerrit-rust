@@ -92,6 +92,11 @@ impl Call {
         self.base.set_query(q);
     }
 
+    /// return reference t base url object
+    pub fn get_base(&self) -> &url::Url {
+        &self.base
+    }
+
     // Low Level Methods
 
     /// set cookie and netrc options and returnes a CallRequest
