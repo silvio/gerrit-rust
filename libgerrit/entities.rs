@@ -34,25 +34,20 @@ pub struct AccountInfo0213 {
     /// The numeric ID of the account
     pub _account_id: Option<u64>,
     /// The full name of the user. Only set if detailed account information is requested. See
-    /// option DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
-    /// (optional)
+    /// option DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.
     pub name: Option<String>,
     /// The email address the user prefers to be contacted through. Only set if detailed account
     /// information is requested. See option DETAILED_ACCOUNTS for change queries and options
-    /// DETAILS and ALL_EMAILS for account queries.  
-    /// (optional)
+    /// DETAILS and ALL_EMAILS for account queries.
     pub email: Option<String>,
     /// A list of the secondary email addresses of the user. Only set for account queries when the
-    /// ALL_EMAILS option is set.  
-    /// (optional)
+    /// ALL_EMAILS option is set.
     pub secondary_emails: Option<Vec<String>>,
     /// The username of the user. Only set if detailed account information is requested. See option
-    /// DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
-    /// (optional)
+    /// DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.
     pub username: Option<String>,
     /// Whether the query would deliver more results if not limited. Only set on the last account
-    /// that is returned.  
-    /// (optional, not set if false)
+    /// that is returned.
     pub _more_accounts: Option<String>,
 }
 
@@ -71,21 +66,17 @@ pub enum AccountInfo {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ActionInfo {
     /// HTTP method to use with the action. Most actions use POST, PUT or DELETE to cause state
-    /// changes.  
-    /// (optional)
+    /// changes.
     pub method: Option<String>,
     /// Short title to display to a user describing the action. In the Gerrit web interface the
-    /// label is used as the text on the button presented in the UI.  
-    /// (optional)
+    /// label is used as the text on the button presented in the UI.
     pub label: Option<String>,
     /// Longer text to display describing the action. In a web UI this should be the title
-    /// attribute of the element, displaying when the user hovers the mouse.  
-    /// (optional)
+    /// attribute of the element, displaying when the user hovers the mouse.
     pub title: Option<String>,
     /// If true the action is permitted at this time and the caller is likely allowed to execute
     /// it. This may change if state is updated at the server or permissions are modified. Not
-    /// present if false.  
-    /// (optional)
+    /// present if false.
     pub enabled: Option<String>,
 }
 
@@ -114,8 +105,7 @@ pub enum ChangeInfo_ChangeStatus {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct LabelInfo {
     /// Whether the label is optional. Optional means the label may be set, but it’s neither
-    /// necessary for submission nor does it block submission if set.  
-    /// (optional)
+    /// necessary for submission nor does it block submission if set.
     pub optional: Option<bool>,
 }
 
@@ -124,8 +114,7 @@ pub struct LabelInfo {
 pub struct ChangeMessageInfo {
     /// The ID of the message.
     pub id: String,
-    /// Author of the message as an AccountInfo entity. Unset if written by the Gerrit system.  
-    /// (optional)
+    /// Author of the message as an AccountInfo entity. Unset if written by the Gerrit system.
     pub author: Option<AccountInfo>,
     /// The timestamp this message was posted.
     pub date: String,
@@ -133,11 +122,9 @@ pub struct ChangeMessageInfo {
     pub message: String,
     /// Value of the tag field from ReviewInput set while posting the review. NOTE: To apply
     /// different tags on on different votes/comments multiple invocations of the REST call are
-    /// required.  
-    /// (optional)
+    /// required.
     pub tag: Option<String>,
-    /// Which patchset (if any) generated this message.  
-    /// (optional)
+    /// Which patchset (if any) generated this message.
     pub _revision_number: Option<u16>,
 }
 
@@ -152,8 +139,7 @@ pub struct FetchInfo {
     pub reference: String,
     /// The download commands for this patch set as a map that maps the command names to the
     /// commands.
-    /// Only set if download commands are requested.  
-    /// (optional)
+    /// Only set if download commands are requested.
     pub commands: Option<String>,
 }
 
@@ -186,12 +172,10 @@ pub struct CommitInfoParents {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CommitInfo {
     /// The commit ID. Not set if included in a RevisionInfo entity that is contained in a map
-    /// which has the commit ID as key.  
-    /// (optional)
+    /// which has the commit ID as key.
     pub commit: Option<String>,
     /// The parent commits of this commit as a list of CommitInfo entities. In each parent only the
-    /// commit and subject fields are populated.  
-    /// (optional)
+    /// commit and subject fields are populated.
     pub parents: Option<Vec<CommitInfoParents>>,
     /// The author of the commit as a GitPersonInfo entity.
     pub author: Option<GitPersonInfo>,
@@ -201,8 +185,7 @@ pub struct CommitInfo {
     pub subject: Option<String>,
     /// The commit message.
     pub message: Option<String>,
-    /// Links to the commit in external sites as a list of WebLinkInfo entities.  
-    /// (optional)
+    /// Links to the commit in external sites as a list of WebLinkInfo entities.
     pub web_links: Option<String>,
 }
 
@@ -306,15 +289,14 @@ pub enum RevisionInfo0213_ChangeKind {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
 pub struct RevisionInfo0213 {
-    /// Whether the patch set is a draft.  
-    /// (optional)
+    /// Whether the patch set is a draft.
     pub draft: Option<bool>,
     /// The change kind. Valid values are REWORK, TRIVIAL_REBASE, MERGE_FIRST_PARENT_UPDATE,
     /// NO_CODE_CHANGE, and NO_CHANGE.
     pub kind: RevisionInfo0213_ChangeKind,
     /// The patch set number.
     pub _number: u64,
-    /// The timestamp of when the patch set was created.  
+    /// The timestamp of when the patch set was created.
     /// (v2.15)
     pub created: String,
     /// The uploader of the patch set as an AccountInfo entity.
@@ -400,11 +382,9 @@ pub struct GpgKeyInfo {
 pub struct ProblemInfo {
     /// Plaintext message describing the problem with the change.
     pub message: String,
-    /// The status of fixing the problem (FIXED, FIX_FAILED). Only set if a fix was attempted.  
-    /// (optional)
+    /// The status of fixing the problem (FIXED, FIX_FAILED). Only set if a fix was attempted.
     pub status: Option<String>,
-    /// If status is set, an additional plaintext message describing the outcome of the fix.  
-    /// (optional)
+    /// If status is set, an additional plaintext message describing the outcome of the fix.
     pub outcome: Option<String>,
 }
 
@@ -434,26 +414,22 @@ pub struct WebLinkInfo {
 /// The `ProjectInfo` entity contains information about a project.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ProjectInfo {
-    /// The name of the project.  
-    /// (optional, not set if returned in a map where the project name is used as map key)
+    /// The name of the project. Not set if returned in a map where the project name is used as map
+    /// key.
     pub name: Option<String>,
     /// The URL encoded project name.
     pub id: String,
     /// The name of the parent project.
     /// ?-<n> if the parent project is not visible (<n> is a number which is increased for each
-    /// non-visible project).  
-    /// (optional)
+    /// non-visible project).
     pub parent: Option<String>,
-    /// The description of the project.  
-    /// (optional)
+    /// The description of the project.
     pub description: Option<String>,
-    /// ACTIVE, READ_ONLY or HIDDEN.  
-    /// (optional)
+    /// ACTIVE, READ_ONLY or HIDDEN.
     pub state: Option<ProjectInfo_ProjectState>,
-    /// Map of branch names to HEAD revisions.  
-    /// (optional)
+    /// Map of branch names to HEAD revisions.
     pub branches: Option<HashMap<String, String>>,
-    /// Links to the project in external sites as a list of WebLinkInfo entries.  
+    /// Links to the project in external sites as a list of WebLinkInfo entries.
     /// (optional, 2.15)
     pub web_links: Option<Vec<WebLinkInfo>>,
 }
@@ -469,8 +445,7 @@ pub struct ChangeInfo {
     /// The name of the target branch.
     /// The refs/heads/ prefix is omitted.
     pub branch: String,
-    /// The topic to which this change belongs.  
-    /// (optional)
+    /// The topic to which this change belongs.
     pub topic: Option<String>,
     /// The Change-Id of the change.
     pub change_id: String,
@@ -482,26 +457,20 @@ pub struct ChangeInfo {
     pub created: String,
     /// The timestamp of when the change was last updated.
     pub updated: String,
-    /// The timestamp of when the change was submitted.  
-    /// (optional, only set for merged changes)
+    /// The timestamp of when the change was submitted.
     pub submitted: Option<String>,
-    /// Whether the calling user has starred this change with the default label.  
-    /// (optional)
+    /// Whether the calling user has starred this change with the default label.
     pub starred: Option<bool>,
     /// A list of star labels that are applied by the calling user to this change. The labels are
-    /// lexicographically sorted.  
-    /// (optional)
+    /// lexicographically sorted.
     pub stars: Option<Vec<String>>,
-    /// Whether the change was reviewed by the calling user. Only set if reviewed is requested.  
-    /// (optional)
+    /// Whether the change was reviewed by the calling user. Only set if reviewed is requested.
     pub reviewed: Option<bool>,
     /// The submit type of the change.
-    /// Not set for merged changes.  
-    /// (optional)
+    /// Not set for merged changes.
     pub submit_type: Option<String>,
     /// Whether the change is mergeable.
-    /// Not set for merged changes, or if the change has not yet been tested.  
-    /// (optional)
+    /// Not set for merged changes, or if the change has not yet been tested.
     pub mergeable: Option<bool>,
     /// Number of inserted lines.
     pub insertions: u16,
@@ -512,52 +481,42 @@ pub struct ChangeInfo {
     /// The owner of the change as an AccountInfo entity.
     pub owner: AccountInfo,
     /// Actions the caller might be able to perform on this revision. The information is a map of
-    /// view name to ActionInfo entities.  
-    /// (optional)
+    /// view name to ActionInfo entities.
     pub action: Option<Vec<ActionInfo>>,
     /// The labels of the change as a map that maps the label names to LabelInfo entries.
-    /// Only set if labels or detailed labels are requested.  
-    /// (optional)
+    /// Only set if labels or detailed labels are requested.
     pub labels: Option<HashMap<String, LabelInfo>>,
     /// A map of the permitted labels that maps a label name to the list of values that are allowed
     /// for that label.
-    /// Only set if detailed labels are requested.  
-    /// (optional)
+    /// Only set if detailed labels are requested.
     pub permitted_labels: Option<HashMap<String, LabelInfo>>,
     /// The reviewers that can be removed by the calling user as a list of AccountInfo entities.
-    /// Only set if detailed labels are requested.  
-    /// (optional)
+    /// Only set if detailed labels are requested.
     pub removeable_reviewers: Option<Vec<AccountInfo>>,
     /// The reviewers as a map that maps a reviewer state to a list of AccountInfo entities.
     /// Possible reviewer states are REVIEWER, CC and REMOVED.
     /// REVIEWER: Users with at least one non-zero vote on the change.
     /// CC: Users that were added to the change, but have not voted.
     /// REMOVED: Users that were previously reviewers on the change, but have been removed.
-    /// Only set if detailed labels are requested.  
-    /// (optional)
+    /// Only set if detailed labels are requested.
     // TODO: own enum
     pub reviewers: Option<String>,
     /// Messages associated with the change as a list of ChangeMessageInfo entities.
-    /// Only set if messages are requested.  
-    /// (optional)
+    /// Only set if messages are requested.
     pub messages: Option<HashMap<String, ChangeMessageInfo>>,
     /// The commit ID of the current patch set of this change.
-    /// Only set if the current revision is requested or if all revisions are requested.  
-    /// (optional)
+    /// Only set if the current revision is requested or if all revisions are requested.
     pub current_revision: Option<String>,
     /// All patch sets of this change as a map that maps the commit ID of the patch set to a
     /// RevisionInfo entity.
     /// Only set if the current revision is requested (in which case it will only contain a key for
-    /// the current revision) or if all revisions are requested.  
-    /// (optional)
+    /// the current revision) or if all revisions are requested.
     pub revisions: Option<HashMap<String, RevisionInfo>>,
     /// Whether the query would deliver more results if not limited.
-    /// Only set on the last change that is returned.  
-    /// (optional)
+    /// Only set on the last change that is returned.
     pub _more_changes: Option<bool>,
     /// A list of ProblemInfo entities describing potential problems with this change. Only set if
-    /// CHECK is set.  
-    /// (optional)
+    /// CHECK is set.
     pub problems: Option<Vec<ProblemInfo>>,
 }
 
@@ -571,20 +530,16 @@ pub struct ChangeInput {
     pub branch: String,
     /// The subject of the change (header line of the commit message).
     pub subject: String,
-    /// The topic to which this change belongs.  
-    /// (optional)
+    /// The topic to which this change belongs.
     pub topic: Option<String>,
-    /// The status of the change (only NEW and DRAFT accepted here).  
-    /// (optional)
+    /// The status of the change (only NEW and DRAFT accepted here).
     // TODO: Only NEW and DRAFT allowed
     pub status: Option<String>,
-    /// A {change-id} that identifies the base change for a create change operation.  
-    /// (optional)
+    /// A {change-id} that identifies the base change for a create change operation.
     pub base_change: Option<String>,
-    /// Allow creating a new branch when set to true.  
-    /// (optional)
+    /// Allow creating a new branch when set to true.
     pub new_branch: Option<bool>,
-    /// The detail of a merge commit as a MergeInput entity.  
+    /// The detail of a merge commit as a MergeInput entity.
     /// (optiional)
     pub merge: Option<MergeInput>,
 }
@@ -596,8 +551,7 @@ pub struct MergeInput {
     /// name, a short reference name under refs/heads, refs/tags, or refs/remotes namespace, etc.
     pub source: String,
     /// The strategy of the merge, can be recursive, resolve, simple-two-way-in-core, ours or
-    /// theirs, default will use project settings.  
-    /// (optional)
+    /// theirs, default will use project settings.
     // TODO: only recursive, resolve, simple-two-way-in-core, ours or theirs allowed
     pub strategy: Option<String>,
 }
@@ -637,25 +591,20 @@ pub struct ReviewerInfo0213 {
     /// The numeric ID of the account
     pub _account_id: Option<u64>,
     /// The full name of the user. Only set if detailed account information is requested. See
-    /// option DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
-    /// (optional)
+    /// option DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.
     pub name: Option<String>,
     /// The email address the user prefers to be contacted through. Only set if detailed account
     /// information is requested. See option DETAILED_ACCOUNTS for change queries and options
-    /// DETAILS and ALL_EMAILS for account queries.  
-    /// (optional)
+    /// DETAILS and ALL_EMAILS for account queries.
     pub email: Option<String>,
     /// A list of the secondary email addresses of the user. Only set for account queries when the
-    /// ALL_EMAILS option is set.  
-    /// (optional)
+    /// ALL_EMAILS option is set.
     pub secondary_emails: Option<Vec<String>>,
     /// The username of the user. Only set if detailed account information is requested. See option
-    /// DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.  
-    /// (optional)
+    /// DETAILED_ACCOUNTS for change queries and option DETAILS for account queries.
     pub username: Option<String>,
     /// Whether the query would deliver more results if not limited. Only set on the last account
-    /// that is returned.  
-    /// (optional, not set if false)
+    /// that is returned.
     pub _more_accounts: Option<String>,
     /// The approvals of the reviewer as a map that maps the label names to the approval values
     /// (“-2”, “-1”, “0”, “+1”, “+2”)
