@@ -27,6 +27,10 @@ quick_error! {
         GerritApi(status: u32, text: String) {
             display("HTTP status: {}, text: {}", status, text)
         }
+
+        NoRevisionInfoEntry {
+            display("No revision returned")
+        }
     }
 }
 
@@ -70,6 +74,7 @@ quick_error! {
             from()
         }
         GerritApiError(err: GerritError) {
+            from()
         }
     }
 }

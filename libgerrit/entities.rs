@@ -83,7 +83,7 @@ pub struct ActionInfo {
 /// `ChangeInfo` helper variant to present a status of a change
 #[allow(non_camel_case_types)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum ChangeInfo_ChangeStatus {
+pub enum ChangeInfoChangeStatus {
     /// new change
     NEW,
     /// change is merged
@@ -109,9 +109,25 @@ pub struct LabelInfo {
     pub optional: Option<bool>,
 }
 
+/// The ChangeMessageInfo entity contains information about a message attached to a change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ChangeMessageInfo0209 {
+    /// The ID of the message.
+    pub id: String,
+    /// Author of the message as an AccountInfo entity.
+    /// Unset if written by the Gerrit system.
+    pub author: Option<AccountInfo0209>,
+    /// The timestamp this message was posted.
+    pub date: String,
+    /// The text left by the user.
+    pub message: String,
+    /// Which patchset (if any) generated this message.
+    pub _revision_number: Option<u16>,
+}
+
 /// The `ChangeMessageInfo` entity contains information about a message attached to a change.
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct ChangeMessageInfo {
+pub struct ChangeMessageInfo0213 {
     /// The ID of the message.
     pub id: String,
     /// Author of the message as an AccountInfo entity. Unset if written by the Gerrit system.
@@ -243,7 +259,6 @@ pub enum FileInfo {
     Gerrit0213(FileInfo0213),
 }
 
-
 /// The `RevisionInfo` entity contains information about a patch set.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 #[serde(deny_unknown_fields)]
@@ -267,10 +282,11 @@ pub struct RevisionInfo0209 {
     pub actions: Option<HashMap<String, ActionInfo>>,
 }
 
+
 #[allow(non_camel_case_types)]
 #[allow(missing_docs)]
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub enum RevisionInfo0213_ChangeKind {
+pub enum RevisionInfoChangeKind0213 {
     #[allow(missing_docs)]
     REWORK,
     #[allow(missing_docs)]
@@ -293,7 +309,7 @@ pub struct RevisionInfo0213 {
     pub draft: Option<bool>,
     /// The change kind. Valid values are REWORK, TRIVIAL_REBASE, MERGE_FIRST_PARENT_UPDATE,
     /// NO_CODE_CHANGE, and NO_CHANGE.
-    pub kind: RevisionInfo0213_ChangeKind,
+    pub kind: RevisionInfoChangeKind0213,
     /// The patch set number.
     pub _number: u64,
     /// The timestamp of when the patch set was created.
@@ -336,9 +352,9 @@ pub struct RevisionInfo0213 {
 #[serde(untagged)]
 pub enum RevisionInfo {
     /// V2.09
-    Gerrit0209(Box<RevisionInfo0209>),
+    Gerrit0209(RevisionInfo0209),
     /// V2.13
-    Gerrit0213(Box<RevisionInfo0213>),
+    Gerrit0213(RevisionInfo0213),
 }
 
 /// The `PushCertificateInfo` entity contains information about a push certificate provided when
@@ -430,13 +446,126 @@ pub struct ProjectInfo {
     /// Map of branch names to HEAD revisions.
     pub branches: Option<HashMap<String, String>>,
     /// Links to the project in external sites as a list of WebLinkInfo entries.
-    /// (optional, 2.15)
     pub web_links: Option<Vec<WebLinkInfo>>,
+}
+
+/// The ReviewerUpdateInfo entity contains information about updates to change’s reviewers set.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ReviewerUpdateInfo0209 {
+    /// Timestamp of the update.
+    pub updated: String,
+    /// The account which modified state of the reviewer in question as AccountInfo entity.
+    pub updated_by: AccountInfo0209,
+    /// The reviewer account added or removed from the change as an AccountInfo entity.
+    pub reviewer: AccountInfo0209,
+    /// The reviewer state, one of REVIEWER, CC or REMOVED.
+    pub state: ReviewerState,
+}
+
+/// The ReviewerUpdateInfo entity contains information about updates to change’s reviewers set.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ReviewerUpdateInfo0213 {
+    /// Timestamp of the update.
+    pub updated: String,
+    /// The account which modified state of the reviewer in question as AccountInfo entity
+    pub updated_by: AccountInfo0213,
+    /// The reviewer account added or removed from the change as an AccountInfo entity
+    pub reviewer: AccountInfo0213,
+    /// The reviewer state, one of REVIEWER, CC or REMOVED
+    pub state: ReviewerState,
+}
+
+/// The reviewers as a map that maps a reviewer state to a list of AccountInfo entities. Possible
+/// reviewer states are REVIEWER, CC and REMOVED.
+/// Only set if detailed labels are requested
+#[allow(non_camel_case_types)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq, Eq, Hash)]
+pub enum ReviewerState {
+    /// Users with at least one non-zero vote on the change.
+    REVIEWER,
+    /// Users that were added to the change, but have not voted.
+    CC,
+    /// Users that were previously reviewers on the change, but have been removed.
+    REMOVED,
 }
 
 /// The `ChangeInfo` entity contains information about a change.
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct ChangeInfo {
+#[serde(deny_unknown_fields)]
+pub struct ChangeInfo0209 {
+    /// gerritcodereview#change
+    pub kind: String,
+    /// The ID of the change in the format "<project>~<branch>~<Change-Id>", where project, branch
+    /// and Change-Id are URL encoded. For branch the refs/heads/ prefix is omitted.
+    pub id: String,
+    /// The name of the project
+    pub project: String,
+    /// The name of the target branch.
+    /// The refs/heads/ prefix is omitted.
+    pub branch: String,
+    /// The topic to which this change belongs.
+    pub topic: Option<String>,
+    /// The Change-Id of the change.
+    pub change_id: String,
+    /// The subject of the change (header line of the commit message).
+    pub subject: String,
+    /// The status of the change (NEW, SUBMITTED, MERGED, ABANDONED, DRAFT).
+    pub status: ChangeInfoChangeStatus,
+    /// The timestamp of when the change was created.
+    pub created: String,
+    /// The timestamp of when the change was last updated.
+    pub updated: String,
+    /// Whether the calling user has starred this change. not set if false
+    pub starred: Option<bool>,
+    /// Whether the change was reviewed by the calling user. Only set if reviewed is requested. not
+    /// set if false
+    pub reviewed: Option<bool>,
+    /// Whether the change is mergeable.
+    /// Not set for merged changes.
+    pub mergeable: Option<bool>,
+    /// Number of inserted lines.
+    pub insertions: u16,
+    /// Number of deleted lines.
+    pub deletions: u16,
+    /// The sortkey of the change.
+    pub _sortkey: String,
+    /// The legacy numeric ID of the change.
+    pub _number: u64,
+    /// The owner of the change as an AccountInfo entity.
+    pub owner: AccountInfo0209,
+    /// Actions the caller might be able to perform on this revision. The information is a map of
+    /// view name to ActionInfo entities.
+    pub actions: Option<ActionInfo>,
+    /// The labels of the change as a map that maps the label names to LabelInfo entries.
+    /// Only set if labels or detailed labels are requested.
+    pub labels: Option<LabelInfo>,
+    /// A map of the permitted labels that maps a label name to the list of values that are allowed
+    /// for that label.
+    /// Only set if detailed labels are requested.
+    pub permitted_labels: Option<HashMap<String, LabelInfo>>,
+    /// The reviewers that can be removed by the calling user as a list of AccountInfo entities.
+    /// Only set if detailed labels are requested.
+    pub removable_reviewers: Option<Vec<AccountInfo0209>>,
+    /// Messages associated with the change as a list of ChangeMessageInfo entities.
+    /// Only set if messages are requested.
+    pub messages: Option<HashMap<String, ChangeMessageInfo0209>>,
+    /// The commit ID of the current patch set of this change.
+    /// Only set if the current revision is requested or if all revisions are requested.
+    pub current_revision: Option<String>,
+    /// All patch sets of this change as a map that maps the commit ID of the patch set to a
+    /// RevisionInfo entity.
+    /// Only set if the current revision is requested (in which case it will only contain a key for
+    /// the current revision) or if all revisions are requested.
+    pub revisions: Option<HashMap<String, RevisionInfo0209>>,
+    /// Whether the query would deliver more results if not limited.
+    /// Only set on either the last or the first change that is returned.
+    pub _more_changes: Option<bool>,
+}
+
+/// The `ChangeInfo` entity contains information about a change.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ChangeInfo0213 {
     /// The ID of the change in the format "'<project>~<branch>~<Change-Id>'", where 'project',
     /// 'branch' and 'Change-Id' are URL encoded. For 'branch' the refs/heads/ prefix is omitted.
     pub id: String,
@@ -452,7 +581,7 @@ pub struct ChangeInfo {
     /// The subject of the change (header line of the commit message).
     pub subject: String,
     /// The status of the change (NEW, MERGED, ABANDONED, DRAFT).
-    pub status: ChangeInfo_ChangeStatus,
+    pub status: ChangeInfoChangeStatus,
     /// The timestamp of when the change was created.
     pub created: String,
     /// The timestamp of when the change was last updated.
@@ -479,7 +608,7 @@ pub struct ChangeInfo {
     /// The legacy numeric ID of the change.
     pub _number: u64,
     /// The owner of the change as an AccountInfo entity.
-    pub owner: AccountInfo,
+    pub owner: AccountInfo0213,
     /// Actions the caller might be able to perform on this revision. The information is a map of
     /// view name to ActionInfo entities.
     pub action: Option<Vec<ActionInfo>>,
@@ -499,11 +628,13 @@ pub struct ChangeInfo {
     /// CC: Users that were added to the change, but have not voted.
     /// REMOVED: Users that were previously reviewers on the change, but have been removed.
     /// Only set if detailed labels are requested.
-    // TODO: own enum
-    pub reviewers: Option<String>,
+    pub reviewers: Option<HashMap<ReviewerState, AccountInfo0213>>,
+    /// Updates to reviewers set for the change as ReviewerUpdateInfo entities. Only set if
+    /// reviewer updates are requested and if NoteDb is enabled.
+    pub reviewer_updates: Option<Vec<ReviewerUpdateInfo0213>>,
     /// Messages associated with the change as a list of ChangeMessageInfo entities.
     /// Only set if messages are requested.
-    pub messages: Option<HashMap<String, ChangeMessageInfo>>,
+    pub messages: Option<HashMap<String, ChangeMessageInfo0213>>,
     /// The commit ID of the current patch set of this change.
     /// Only set if the current revision is requested or if all revisions are requested.
     pub current_revision: Option<String>,
@@ -511,13 +642,31 @@ pub struct ChangeInfo {
     /// RevisionInfo entity.
     /// Only set if the current revision is requested (in which case it will only contain a key for
     /// the current revision) or if all revisions are requested.
-    pub revisions: Option<HashMap<String, RevisionInfo>>,
+    pub revisions: Option<HashMap<String, RevisionInfo0213>>,
     /// Whether the query would deliver more results if not limited.
     /// Only set on the last change that is returned.
     pub _more_changes: Option<bool>,
     /// A list of ProblemInfo entities describing potential problems with this change. Only set if
     /// CHECK is set.
     pub problems: Option<Vec<ProblemInfo>>,
+
+    // this fields are undocumented but returned from gerrit server
+    // * https://bugs.chromium.org/p/gerrit/issues/detail?id=4629
+    // * https://gerrit-review.googlesource.com/#/c/92152/2/Documentation/rest-api-changes.txt
+    /// Not documented
+    pub hashtags: Option<Vec<String>>,
+    /// Not documented
+    pub submittable: Option<bool>,
+}
+
+/// `ChangeInfo` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ChangeInfo {
+    /// V2.09
+    Gerrit0209(ChangeInfo0209),
+    /// V2.13
+    Gerrit0213(ChangeInfo0213),
 }
 
 /// The `ChangeInput` entity contains information about creating a new change.
@@ -701,7 +850,7 @@ pub struct ReviewerInput0213 {
     pub reviewer: String,
     /// Add reviewer in this state. Possible reviewer states are REVIEWER and CC. If not given,
     /// defaults to REVIEWER.
-    pub state: Option<String>,
+    pub state: Option<ReviewerState>,
     /// Whether adding the reviewer is confirmed.
     /// The Gerrit server may be configured to require a confirmation when adding a group as
     /// reviewer that has many members.
