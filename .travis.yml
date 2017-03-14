@@ -7,8 +7,8 @@ rust:
   - nightly
 
 script:
-  - cargo build
-  - cargo build --release
+  - cargo build --jobs 8
+  - cargo build --release --jobs 8
   - ./misc/testsetup.sh; true
   - cargo test
   - cd libgerrit && cargo test
