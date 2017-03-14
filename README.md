@@ -173,8 +173,8 @@ Some design considarations here.
             *   [ ] Set Topic
             *   [ ] Delete Topic
             *   [ ] Abandon Change
-            *   [ ] Restore Change
-            *   [ ] Rebase Change
+            *   [x] **0.2.2** Restore Change
+            *   [x] **0.2.2** Rebase Change
             *   [ ] Move Change
             *   [ ] Revert Change
             *   [ ] Submit Change
