@@ -53,6 +53,29 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                                  .index(1)
                             )
                 )
+                .subcommand(SubCommand::with_name("abandonchange")
+                            .about("Abandon a change")
+                            .arg(Arg::with_name("changeid")
+                                 .required(true)
+                                 .takes_value(true)
+                                 .help("The change id which should abandoned")
+                                 .index(1)
+                            )
+                            .arg(Arg::with_name("message")
+                                 .long("message")
+                                 .short("m")
+                                 .help("Abandon message")
+                                 .takes_value(true)
+                            )
+                            .arg(Arg::with_name("notify")
+                                 .long("notify")
+                                 .short("n")
+                                 .help("Notification hint (only v2.13). defaullt is 'none'")
+                                 .takes_value(true)
+                                 .possible_values(&["all", "none", "owner", "owner_reviewer"])
+                                 .default_value("none")
+                            )
+                )
     )
     .subcommand(SubCommand::with_name("config")
                 .about("Config endpoint")
@@ -146,6 +169,19 @@ fn changes(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                     println!("Error: {:?}", x);
                 },
             }
+        },
+
+        ("abandonchange", Some(opt)) => {
+            let changeid = opt.value_of("changeid").unwrap();
+            let message = opt.value_of("message");
+            let notify = opt.value_of("notify");
+
+            match gerrit.changes().abandon_change(changeid, message, notify) {
+                Ok(ci) => {
+                    println!("* {:?}", ci);
+                },
+                Err(x) => println!("Error: {:?}", x),
+            };
         },
 
         e => {

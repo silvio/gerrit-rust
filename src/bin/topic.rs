@@ -106,6 +106,36 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .short("v")
                 )
     )
+    .subcommand(SubCommand::with_name("abandon")
+                .about("Abandon a topic")
+                .arg(Arg::with_name("topicname")
+                     .help("topic name to abandon/restore")
+                     .required(true)
+                     .takes_value(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("message")
+                     .help("message for abandon/restore operation")
+                     .short("m")
+                     .long("message")
+                     .takes_value(true)
+                )
+    )
+    .subcommand(SubCommand::with_name("restore")
+                .about("Restore a topic")
+                .arg(Arg::with_name("topicname")
+                     .help("topic name to abandon/restore")
+                     .required(true)
+                     .takes_value(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("message")
+                     .help("message for abandon/restore operation")
+                     .short("m")
+                     .long("message")
+                     .takes_value(true)
+                )
+    )
 }
 
 /// manage subfunction of `topic` command
@@ -122,6 +152,8 @@ pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
         ("fetch", Some(y)) => { fetch(y, config) },
         ("checkout", Some(y)) => { checkout(y, config) },
         ("reviewer", Some(y)) => { reviewer(y, config) },
+        ("abandon", Some(y)) => { abandon(y, config) },
+        ("restore", Some(y)) => { restore(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -412,6 +444,113 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
     Ok(())
 }
+
+/// abandon a topic
+fn abandon(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let topicname = y.value_of("topicname").expect("problem with topic name");
+    let message = y.value_of("message");
+
+    debug!("abandon topic:{}, message:{}", topicname, message.unwrap_or(""));
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+
+    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+        for ci in cis {
+
+            let (changeid, subject) = match ci {
+                entities::ChangeInfo::Gerrit0209(x) => {
+                    (x.change_id, x.subject)
+                },
+                entities::ChangeInfo::Gerrit0213(x) => {
+                    (x.change_id, x.subject)
+                },
+            };
+
+
+
+            let (abid, absubject, abcause) = match gerrit.changes().abandon_change(&changeid, message, None) {
+                Ok(ciret) => {
+                    match ciret {
+                        entities::ChangeInfo::Gerrit0209(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                        entities::ChangeInfo::Gerrit0213(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                    }
+                },
+                Err(x) => {
+                    (changeid, subject, Some(x))
+                },
+            };
+
+            match abcause {
+                None => {
+                    println!("* {:5.5} [{:20.20}] abandoned", abid, absubject);
+                },
+                Some(x) => {
+                    println!("* {:5.5} [{:20.20}] not abandoned: {}", abid, absubject, x);
+                },
+            };
+        }
+    }
+
+    Ok(())
+}
+
+/// restore a topic
+fn restore(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let topicname = y.value_of("topicname").expect("problem with topic name");
+    let message = y.value_of("message");
+
+    debug!("restore topic:{}, message:{}", topicname, message.unwrap_or(""));
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+
+    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+        for ci in cis {
+
+            let (changeid, subject) = match ci {
+                entities::ChangeInfo::Gerrit0209(x) => {
+                    (x.change_id, x.subject)
+                },
+                entities::ChangeInfo::Gerrit0213(x) => {
+                    (x.change_id, x.subject)
+                },
+            };
+
+
+
+            let (abid, absubject, abcause) = match gerrit.changes().restore_change(&changeid, message) {
+                Ok(ciret) => {
+                    match ciret {
+                        entities::ChangeInfo::Gerrit0209(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                        entities::ChangeInfo::Gerrit0213(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                    }
+                },
+                Err(x) => {
+                    (changeid, subject, Some(x))
+                },
+            };
+
+            match abcause {
+                None => {
+                    println!("* {:5.5} [{:20.20}] restored", abid, absubject);
+                },
+                Some(x) => {
+                    println!("* {:5.5} [{:20.20}] not restored: {}", abid, absubject, x);
+                },
+            };
+        }
+    }
+
+    Ok(())
+}
+
 
 /// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
 ///

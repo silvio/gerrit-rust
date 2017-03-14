@@ -107,17 +107,17 @@ Some design considarations here.
               variable and formating informations like `{email}`,
               `{email:15.2}`.
 
-    *   [ ] `ggr topic abandon [-r] [<TOPIC>]`  
-        Abandon and restore (`-r`) a complete topic.
+    *   [x] **0.1.18** `ggr topic abandon|restore [<TOPIC>]`  
+        Abandon/restore a complete topic.
         *   [ ] Without TOPIC it uses the actual topic
-        *   [ ] `[-t <MESSAGE>]` adds a abandon message to all changes in this
-            topic
+        *   [x] **0.1.18** `[-m <MESSAGE>]` adds a abandon message to all
+            changes in this topic
         *   [ ] `[-n <NONE|OWNER|REVIEWERS|ALL>]` notifiy a group of accounts
-            about this abandon or don't notify (via `NONE`). Default is `ALL`.
+            about this abandon action or don't notify (via `NONE`). Default is
+            `ALL`.
 
     *   [ ] `ggr topic rename OLDTOPIC TOPIC`  
         Rename OLDTOPIC to TOPIC
-        *   [ ] `-r` to rename the topic on gerrit server too
         *   [ ] make OLDTOPIC optional, the current topic is renamed
 
     *   [ ] `ggr topic verify [<TOPICNAME>] <LABEL> [<MESSAGE>]`
