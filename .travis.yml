@@ -32,7 +32,7 @@ deploy:
   provider: releases
   api_key:
     secure: OdeYlgWHHAqe7+F4BdjyfZoiCPL+bFJhvUZkh80xnyua3/ubKHvPbElvUdVA4+Yzg/NP97mlLKT/tap31m2nH+p76s9ZCPRk5hJY1h/zYAaWlpOfB2obYRohfpZJHbjkb5UhAwsjpCQfGOZwo2LmcNub6PYhqAZinwSg6iiQQYIIR471WD+XQjocNiCNf4q0ZorHpEKFc6IR3wd7r9grQo64777u/7+JWz7kJCUofv9IS8agQJXyTfz8tzLZAKwHHb5ZpeJg+0bZPc+h3YhFVKofEMEUXI+8SoVoVjDbAoGjkSWMzrfd6Fv2WY8btMxBhHV2ugzABR7+FDWilMfnkbIDV4UOf4S96lVYub6mMMMoDR/s1SSFKED8sfTzA3kCuwZRpqly00Avk2kGEQly8NYKVeelw7khoxH+eA9RPZky3JPBCasGmcvpNYXAEW78QHLSzpKd6kA45zatLAGDGYcPrSSWXUZ9bg1GRNHzm9nfIqWBk+G7YFblqrWzOeGyzG2qo5R72NLZ57OInoHN+tgnY3Idrz48+ugsGAz//7S6KaJmNfK5BEjU5P2XUjdBFiG46jZ0e8EjGzAWXq+Yfb1qizwjLHlHoe5PS01wFx9GhJtHDFSaWVg96xTzOjPG+mqpon+B3FgltDQsK8tNC/xWeYwxhYGSrjKGd7HstOQ=
-  file: target/release/gerrit-rust
+  file: ${TRAVIS_BUILD_DIR}/target/release/gerrit-rust
   on:
     repo: silvio/gerrit-rust
     tags: true
