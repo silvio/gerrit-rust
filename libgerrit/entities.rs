@@ -109,7 +109,7 @@ pub struct LabelInfo {
     pub optional: Option<bool>,
 }
 
-/// The ChangeMessageInfo entity contains information about a message attached to a change.
+/// The `ChangeMessageInfo` entity contains information about a message attached to a change.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ChangeMessageInfo0209 {
     /// The ID of the message.
@@ -352,9 +352,9 @@ pub struct RevisionInfo0213 {
 #[serde(untagged)]
 pub enum RevisionInfo {
     /// V2.09
-    Gerrit0209(RevisionInfo0209),
+    Gerrit0209(Box<RevisionInfo0209>),
     /// V2.13
-    Gerrit0213(RevisionInfo0213),
+    Gerrit0213(Box<RevisionInfo0213>),
 }
 
 /// The `PushCertificateInfo` entity contains information about a push certificate provided when
@@ -449,7 +449,7 @@ pub struct ProjectInfo {
     pub web_links: Option<Vec<WebLinkInfo>>,
 }
 
-/// The ReviewerUpdateInfo entity contains information about updates to change’s reviewers set.
+/// The `ReviewerUpdateInfo` entity contains information about updates to change’s reviewers set.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReviewerUpdateInfo0209 {
     /// Timestamp of the update.
@@ -462,20 +462,20 @@ pub struct ReviewerUpdateInfo0209 {
     pub state: ReviewerState,
 }
 
-/// The ReviewerUpdateInfo entity contains information about updates to change’s reviewers set.
+/// The `ReviewerUpdateInfo` entity contains information about updates to change’s reviewers set.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct ReviewerUpdateInfo0213 {
     /// Timestamp of the update.
     pub updated: String,
-    /// The account which modified state of the reviewer in question as AccountInfo entity
+    /// The account which modified state of the reviewer in question as `AccountInfo` entity
     pub updated_by: AccountInfo0213,
-    /// The reviewer account added or removed from the change as an AccountInfo entity
+    /// The reviewer account added or removed from the change as an `AccountInfo` entity
     pub reviewer: AccountInfo0213,
-    /// The reviewer state, one of REVIEWER, CC or REMOVED
+    /// The reviewer state, one of `REVIEWER`, `CC` or `REMOVED`
     pub state: ReviewerState,
 }
 
-/// The reviewers as a map that maps a reviewer state to a list of AccountInfo entities. Possible
+/// The reviewers as a map that maps a reviewer state to a list of `AccountInfo` entities. Possible
 /// reviewer states are REVIEWER, CC and REMOVED.
 /// Only set if detailed labels are requested
 #[allow(non_camel_case_types)]

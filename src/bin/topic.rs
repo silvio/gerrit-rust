@@ -332,7 +332,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                 &x.id
                             },
                         };
-                        if let Err(res) = gerrit.changes().delete_reviewer(&id, reviewer) {
+                        if let Err(res) = gerrit.changes().delete_reviewer(id, reviewer) {
                             match res {
                                 GGRError::GerritApiError(ref x) => {
                                     println!("{}, {}", reviewer, x.description());
@@ -351,7 +351,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                 &x.id
                             },
                         };
-                        match gerrit.changes().add_reviewer(&id, reviewer) {
+                        match gerrit.changes().add_reviewer(id, reviewer) {
                             Ok(addreviewerresult) => {
                                 match addreviewerresult {
                                     entities::AddReviewerResult::Gerrit0209(g) => {
@@ -409,7 +409,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
             };
 
             println!("* reviewer for {}:", subject);
-            if let Ok(reviewers) = gerrit.changes().get_reviewers(&id) {
+            if let Ok(reviewers) = gerrit.changes().get_reviewers(id) {
                 let mut reviewer_list = Vec::new();
                 for reviewer in reviewers {
                     let (name, username, email, approval) = match reviewer {
@@ -648,8 +648,8 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                     entities::ChangeInfo::Gerrit0209(ref x) => {
                         if let Some(ref cur_rev) = x.current_revision {
                             if let Some(ref revisions) = x.revisions {
-                                if let Some(ref current_revision) = revisions.get(cur_rev) {
-                                    if let Some(ref fetchref) = current_revision.fetch.get("http") {
+                                if let Some(current_revision) = revisions.get(cur_rev) {
+                                    if let Some(fetchref) = current_revision.fetch.get("http") {
                                         &fetchref.reference
                                     } else {
                                         return Err(GGRError::General("No fetch ref".into()));
@@ -667,8 +667,8 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                     entities::ChangeInfo::Gerrit0213(ref x) => {
                         if let Some(ref cur_rev) = x.current_revision {
                             if let Some(ref revisions) = x.revisions {
-                                if let Some(ref current_revision) = revisions.get(cur_rev) {
-                                    if let Some(ref fetchref) = current_revision.fetch.get("http") {
+                                if let Some(current_revision) = revisions.get(cur_rev) {
+                                    if let Some(fetchref) = current_revision.fetch.get("http") {
                                         &fetchref.reference
                                     } else {
                                         return Err(GGRError::General("No fetch ref".into()));
@@ -758,7 +758,7 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
                 entities::ChangeInfo::Gerrit0209(ref element) => {
                     if let Some(ref cur_revision) = element.current_revision {
                         if let Some(ref revisions) = element.revisions {
-                            if let Some(ref cur_revision) = revisions.get(cur_revision) {
+                            if let Some(cur_revision) = revisions.get(cur_revision) {
                                 if let Some(ref commit) = cur_revision.commit {
                                     if let Some(ref parents) = commit.parents {
                                         for p in parents {
@@ -773,7 +773,7 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
                 entities::ChangeInfo::Gerrit0213(ref element) => {
                     if let Some(ref cur_revision) = element.current_revision {
                         if let Some(ref revisions) = element.revisions {
-                            if let Some(ref cur_revision) = revisions.get(cur_revision) {
+                            if let Some(cur_revision) = revisions.get(cur_revision) {
                                 if let Some(ref commit) = cur_revision.commit {
                                     if let Some(ref parents) = commit.parents {
                                         for p in parents {
@@ -957,4 +957,3 @@ fn test_url_to_projectname() {
     assert_eq!(url_to_projectname("n/i/k/o/lause"), Some("lause"));
     assert_eq!(url_to_projectname(""), None);
 }
-
