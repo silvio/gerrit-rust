@@ -119,7 +119,7 @@ impl Changes {
     /// api function `GET /changes/{change-id}/reviewers/'
     pub fn get_reviewers(&self, changeid: &str) -> GGRResult<Vec<entities::ReviewerInfo>> {
         if changeid.is_empty() {
-            return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid is empty".into())));
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
         let (path, _) = self.build_url();
