@@ -226,7 +226,7 @@ impl<'a> CallRequest<'a> {
     pub fn with_json_body<S: Serialize>(&mut self, body: &S) -> GGRResult<&mut CallRequest<'a>> {
         let mut body_bytes: Vec<u8> = vec![];
         serde_json::to_writer(&mut body_bytes, &body)?;
-        debug!("sending JSON data ({} bytes)", body_bytes.len());
+        debug!("sending JSON data ({} bytes) '{:?}'", body_bytes.len(), String::from_utf8_lossy(&body_bytes));
         self.body = Some(body_bytes);
         self.headers.append("Content-Type: application/json")?;
         Ok(self)

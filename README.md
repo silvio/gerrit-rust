@@ -107,6 +107,19 @@ Some design considarations here.
               variable and formating informations like `{email}`,
               `{email:15.2}`.
 
+    *   [x] **0.1.18** `ggr topic abandon|restore [<TOPIC>]`  
+        Abandon/restore a complete topic.
+        *   [ ] Without TOPIC it uses the actual topic
+        *   [x] **0.1.18** `[-m <MESSAGE>]` adds a abandon message to all
+            changes in this topic
+        *   [ ] `[-n <NONE|OWNER|REVIEWERS|ALL>]` notifiy a group of accounts
+            about this abandon action or don't notify (via `NONE`). Default is
+            `ALL`.
+
+    *   [ ] `ggr topic rename OLDTOPIC TOPIC`  
+        Rename OLDTOPIC to TOPIC
+        *   [ ] make OLDTOPIC optional, the current topic is renamed
+
     *   [ ] `ggr topic verify [<TOPICNAME>] <LABEL> [<MESSAGE>]`
         Verify all commits of a topic TOPICNAME with a label LABEL
         (-2|-1|0|+1|+2|=) and a optional message. Be aware the messages is

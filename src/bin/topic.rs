@@ -106,6 +106,36 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .short("v")
                 )
     )
+    .subcommand(SubCommand::with_name("abandon")
+                .about("Abandon a topic")
+                .arg(Arg::with_name("topicname")
+                     .help("topic name to abandon/restore")
+                     .required(true)
+                     .takes_value(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("message")
+                     .help("message for abandon/restore operation")
+                     .short("m")
+                     .long("message")
+                     .takes_value(true)
+                )
+    )
+    .subcommand(SubCommand::with_name("restore")
+                .about("Restore a topic")
+                .arg(Arg::with_name("topicname")
+                     .help("topic name to abandon/restore")
+                     .required(true)
+                     .takes_value(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("message")
+                     .help("message for abandon/restore operation")
+                     .short("m")
+                     .long("message")
+                     .takes_value(true)
+                )
+    )
 }
 
 /// manage subfunction of `topic` command
@@ -122,6 +152,8 @@ pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
         ("fetch", Some(y)) => { fetch(y, config) },
         ("checkout", Some(y)) => { checkout(y, config) },
         ("reviewer", Some(y)) => { reviewer(y, config) },
+        ("abandon", Some(y)) => { abandon(y, config) },
+        ("restore", Some(y)) => { restore(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -292,7 +324,15 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
                     if remove {
                         let reviewer = &reviewer[1..];
-                        if let Err(res) = gerrit.changes().delete_reviewer(&ci.id, reviewer) {
+                        let id = match ci {
+                            entities::ChangeInfo::Gerrit0209(ref x) => {
+                                &x.id
+                            },
+                            entities::ChangeInfo::Gerrit0213(ref x) => {
+                                &x.id
+                            },
+                        };
+                        if let Err(res) = gerrit.changes().delete_reviewer(id, reviewer) {
                             match res {
                                 GGRError::GerritApiError(ref x) => {
                                     println!("{}, {}", reviewer, x.description());
@@ -303,7 +343,15 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                             println!("{}: removed", reviewer);
                         };
                     } else {
-                        match gerrit.changes().add_reviewer(&ci.id, reviewer) {
+                        let id = match ci {
+                            entities::ChangeInfo::Gerrit0209(ref x) => {
+                                &x.id
+                            },
+                            entities::ChangeInfo::Gerrit0213(ref x) => {
+                                &x.id
+                            },
+                        };
+                        match gerrit.changes().add_reviewer(id, reviewer) {
                             Ok(addreviewerresult) => {
                                 match addreviewerresult {
                                     entities::AddReviewerResult::Gerrit0209(g) => {
@@ -351,8 +399,17 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
         // only list reviewers
         for ci in cis {
-            println!("* reviewer for {}:", ci.subject);
-            if let Ok(reviewers) = gerrit.changes().get_reviewers(&ci.id) {
+            let (id, subject) = match ci {
+                entities::ChangeInfo::Gerrit0209(ref x) => {
+                    (&x.id, &x.subject)
+                },
+                entities::ChangeInfo::Gerrit0213(ref x) => {
+                    (&x.id, &x.subject)
+                },
+            };
+
+            println!("* reviewer for {}:", subject);
+            if let Ok(reviewers) = gerrit.changes().get_reviewers(id) {
                 let mut reviewer_list = Vec::new();
                 for reviewer in reviewers {
                     let (name, username, email, approval) = match reviewer {
@@ -387,6 +444,113 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
     Ok(())
 }
+
+/// abandon a topic
+fn abandon(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let topicname = y.value_of("topicname").expect("problem with topic name");
+    let message = y.value_of("message");
+
+    debug!("abandon topic:{}, message:{}", topicname, message.unwrap_or(""));
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+
+    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+        for ci in cis {
+
+            let (changeid, subject) = match ci {
+                entities::ChangeInfo::Gerrit0209(x) => {
+                    (x.change_id, x.subject)
+                },
+                entities::ChangeInfo::Gerrit0213(x) => {
+                    (x.change_id, x.subject)
+                },
+            };
+
+
+
+            let (abid, absubject, abcause) = match gerrit.changes().abandon_change(&changeid, message, None) {
+                Ok(ciret) => {
+                    match ciret {
+                        entities::ChangeInfo::Gerrit0209(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                        entities::ChangeInfo::Gerrit0213(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                    }
+                },
+                Err(x) => {
+                    (changeid, subject, Some(x))
+                },
+            };
+
+            match abcause {
+                None => {
+                    println!("* {:5.5} [{:20.20}] abandoned", abid, absubject);
+                },
+                Some(x) => {
+                    println!("* {:5.5} [{:20.20}] not abandoned: {}", abid, absubject, x);
+                },
+            };
+        }
+    }
+
+    Ok(())
+}
+
+/// restore a topic
+fn restore(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let topicname = y.value_of("topicname").expect("problem with topic name");
+    let message = y.value_of("message");
+
+    debug!("restore topic:{}, message:{}", topicname, message.unwrap_or(""));
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+
+    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+        for ci in cis {
+
+            let (changeid, subject) = match ci {
+                entities::ChangeInfo::Gerrit0209(x) => {
+                    (x.change_id, x.subject)
+                },
+                entities::ChangeInfo::Gerrit0213(x) => {
+                    (x.change_id, x.subject)
+                },
+            };
+
+
+
+            let (abid, absubject, abcause) = match gerrit.changes().restore_change(&changeid, message) {
+                Ok(ciret) => {
+                    match ciret {
+                        entities::ChangeInfo::Gerrit0209(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                        entities::ChangeInfo::Gerrit0213(x) => {
+                            (x.change_id, x.subject, None)
+                        },
+                    }
+                },
+                Err(x) => {
+                    (changeid, subject, Some(x))
+                },
+            };
+
+            match abcause {
+                None => {
+                    println!("* {:5.5} [{:20.20}] restored", abid, absubject);
+                },
+                Some(x) => {
+                    println!("* {:5.5} [{:20.20}] not restored: {}", abid, absubject, x);
+                },
+            };
+        }
+    }
+
+    Ok(())
+}
+
 
 /// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
 ///
@@ -474,64 +638,89 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                 p_name.into(),
                 format!("{}.git", p_name)
             );
+
+
+
             if check_project_names.contains(&String::from(url_to_projectname(&url).unwrap())) {
-                if let Ok(entity) = entity_from_commit(ci, p_tip) {
-                    if let Some(ref cur_rev) = entity.current_revision {
-                        if let Some(ref revisions) = entity.revisions {
-                            let reference = match *revisions.get(cur_rev).unwrap() {
-                                entities::RevisionInfo::Gerrit0209(ref x) => {
-                                    &x.fetch["http"].reference
-                                },
-                                entities::RevisionInfo::Gerrit0213(ref x) => {
-                                    &x.fetch["http"].reference
-                                },
-                            };
-                            let force_string = if force {"+"} else { "" };
-                            let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
+                let entity = entity_from_commit(ci, p_tip)?;
 
-                            if !force  && repo.find_branch(local_branch_name, BranchType::Local).is_ok() {
-                                // Branch exists, but no force
-                                return Ok((false, String::from("Branch exists and no force")));
-                            }
-
-                            let mut output_fetch = try!(Command::new("git")
-                                .current_dir(repo.path())
-                                .arg("fetch")
-                                .arg(remote.name().unwrap())
-                                .arg(refspec)
-                                .output());
-
-                            if output_fetch.status.success() {
-                                if let Some(tracking_branch) = tracking_branch_name {
-                                    let mut output_tracking = try!(Command::new("git")
-                                         .current_dir(repo.path())
-                                         .arg("branch")
-                                         .arg("--set-upstream-to")
-                                         .arg(tracking_branch)
-                                         .arg(local_branch_name)
-                                         .output());
-                                    if !output_tracking.stdout.is_empty() {
-                                        output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
-                                        output_fetch.stdout.append(&mut output_tracking.stdout);
+                let reference = match *entity {
+                    entities::ChangeInfo::Gerrit0209(ref x) => {
+                        if let Some(ref cur_rev) = x.current_revision {
+                            if let Some(ref revisions) = x.revisions {
+                                if let Some(current_revision) = revisions.get(cur_rev) {
+                                    if let Some(fetchref) = current_revision.fetch.get("http") {
+                                        &fetchref.reference
+                                    } else {
+                                        return Err(GGRError::General("No fetch ref".into()));
                                     }
-                                    if !output_tracking.stderr.is_empty() {
-                                        output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
-                                        output_fetch.stdout.append(&mut output_tracking.stderr);
-                                    }
+                                } else {
+                                    return Err(GGRError::General("no current revisions".into()));
                                 }
-
-                                return Ok((true, try!(String::from_utf8(output_fetch.stdout))));
+                            } else {
+                                return Err(GGRError::General("No revisions".into()));
                             }
-
-                            return Ok((false, try!(String::from_utf8(output_fetch.stderr))));
                         } else {
-                            return Err(GGRError::General("no revisions".into()));
+                            return Err(GGRError::General("No cur_rev".into()));
                         }
-                    } else {
-                        return Err(GGRError::General("No cur_rev".into()));
+                    },
+                    entities::ChangeInfo::Gerrit0213(ref x) => {
+                        if let Some(ref cur_rev) = x.current_revision {
+                            if let Some(ref revisions) = x.revisions {
+                                if let Some(current_revision) = revisions.get(cur_rev) {
+                                    if let Some(fetchref) = current_revision.fetch.get("http") {
+                                        &fetchref.reference
+                                    } else {
+                                        return Err(GGRError::General("No fetch ref".into()));
+                                    }
+                                } else {
+                                    return Err(GGRError::General("no current revisions".into()));
+                                }
+                            } else {
+                                return Err(GGRError::General("No revisions".into()));
+                            }
+                        } else {
+                            return Err(GGRError::General("No cur_rev".into()));
+                        }
+                    },
+                };
+
+
+                let force_string = if force {"+"} else { "" };
+                let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
+
+                if !force  && repo.find_branch(local_branch_name, BranchType::Local).is_ok() {
+                    // Branch exists, but no force
+                    return Ok((false, String::from("Branch exists and no force")));
+                }
+
+                let mut output_fetch = try!(Command::new("git")
+                    .current_dir(repo.path())
+                    .arg("fetch")
+                    .arg(remote.name().unwrap())
+                    .arg(refspec)
+                    .output());
+
+                if output_fetch.status.success() {
+                    if let Some(tracking_branch) = tracking_branch_name {
+                        let mut output_tracking = try!(Command::new("git")
+                             .current_dir(repo.path())
+                             .arg("branch")
+                             .arg("--set-upstream-to")
+                             .arg(tracking_branch)
+                             .arg(local_branch_name)
+                             .output());
+                        if !output_tracking.stdout.is_empty() {
+                            output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
+                            output_fetch.stdout.append(&mut output_tracking.stdout);
+                        }
+                        if !output_tracking.stderr.is_empty() {
+                            output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
+                            output_fetch.stdout.append(&mut output_tracking.stderr);
+                        }
                     }
-                } else {
-                    return Err(GGRError::General("no entity from commit".into()));
+
+                    return Ok((true, try!(String::from_utf8(output_fetch.stdout))));
                 }
             }
         }
@@ -545,8 +734,16 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
     // find involved projects
     let mut list_of_projects = Vec::new();
     for element in changes {
-        if !list_of_projects.contains(&element.project) {
-            list_of_projects.push(element.project.clone());
+        let project = match *element {
+            entities::ChangeInfo::Gerrit0209(ref x) => {
+                &x.project
+            },
+            entities::ChangeInfo::Gerrit0213(ref x) => {
+                &x.project
+            },
+        };
+        if !list_of_projects.contains(project) {
+            list_of_projects.push(project.clone());
         }
     }
 
@@ -555,57 +752,95 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
     for project in list_of_projects {
         // find in entities the last change of every project for this topic
         let mut list_all_parents = Vec::new();
+        // fill a list with all parents
         for element in changes {
-            if let Some(ref cur_revision) = element.current_revision {
-                if let Some(ref revisions) = element.revisions {
-
-                    if let Some(cur_revision) = revisions.get(cur_revision) {
-                        let commit = match *cur_revision {
-                            entities::RevisionInfo::Gerrit0209(ref x) => {
-                                &x.commit
-                            },
-                            entities::RevisionInfo::Gerrit0213(ref x) => {
-                                &x.commit
-                            }
-                        };
-
-                        if let Some(ref commit) = *commit {
-                            if let Some(ref parents) = commit.parents {
-                                for p in parents {
-                                    list_all_parents.push(&p.commit);
+            match *element {
+                entities::ChangeInfo::Gerrit0209(ref element) => {
+                    if let Some(ref cur_revision) = element.current_revision {
+                        if let Some(ref revisions) = element.revisions {
+                            if let Some(cur_revision) = revisions.get(cur_revision) {
+                                if let Some(ref commit) = cur_revision.commit {
+                                    if let Some(ref parents) = commit.parents {
+                                        for p in parents {
+                                            list_all_parents.push(&p.commit);
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            }
+                },
+                entities::ChangeInfo::Gerrit0213(ref element) => {
+                    if let Some(ref cur_revision) = element.current_revision {
+                        if let Some(ref revisions) = element.revisions {
+                            if let Some(cur_revision) = revisions.get(cur_revision) {
+                                if let Some(ref commit) = cur_revision.commit {
+                                    if let Some(ref parents) = commit.parents {
+                                        for p in parents {
+                                            list_all_parents.push(&p.commit);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+            };
         }
 
         for element in changes {
-            if element.project == *project {
-                if let Some(ref cur_revision) = element.current_revision {
-                    if !list_all_parents.contains(&cur_revision) {
-                        // a tip commit is never a parent for a topic
-                        project_tip.insert(project, cur_revision.clone());
-                        break;
+            match *element {
+                entities::ChangeInfo::Gerrit0209(ref element) => {
+                    if element.project == *project {
+                        if let Some(ref cur_revision) = element.current_revision {
+                            if !list_all_parents.contains(&cur_revision) {
+                                // a tip commit is never a parent for a topic
+                                project_tip.insert(project, cur_revision.clone());
+                                break;
+                            }
+                        }
                     }
-                }
-            }
+                },
+                entities::ChangeInfo::Gerrit0213(ref element) => {
+                    if element.project == *project {
+                        if let Some(ref cur_revision) = element.current_revision {
+                            if !list_all_parents.contains(&cur_revision) {
+                                // a tip commit is never a parent for a topic
+                                project_tip.insert(project, cur_revision.clone());
+                                break;
+                            }
+                        }
+                    }
+                },
+            };
         }
     }
 
     Ok(project_tip)
 }
 
-pub fn entity_from_commit(changes: &[entities::ChangeInfo], commit: &str) -> GGRResult<entities::ChangeInfo> {
+pub fn entity_from_commit<'ci>(changes: &'ci [entities::ChangeInfo], commit: &str) -> GGRResult<&'ci entities::ChangeInfo> {
     for element in changes {
-        if let Some(ref revisions) = element.revisions {
-            for rev in revisions.keys() {
-                if *rev == commit {
-                    return Ok(element.clone());
+        match *element {
+            entities::ChangeInfo::Gerrit0209(ref x) => {
+                if let Some(ref revisions) = x.revisions {
+                    for rev in revisions.keys() {
+                        if rev == commit {
+                            return Ok(element);
+                        }
+                    }
                 }
-            }
-        }
+            },
+            entities::ChangeInfo::Gerrit0213(ref x) => {
+                if let Some(ref revisions) = x.revisions {
+                    for rev in revisions.keys() {
+                        if rev == commit {
+                            return Ok(element);
+                        }
+                    }
+                }
+            },
+        };
     }
 
     Err(GGRError::General("no entity found".into()))
@@ -722,4 +957,3 @@ fn test_url_to_projectname() {
     assert_eq!(url_to_projectname("n/i/k/o/lause"), Some("lause"));
     assert_eq!(url_to_projectname(""), None);
 }
-

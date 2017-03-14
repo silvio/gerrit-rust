@@ -85,10 +85,11 @@ fn main() {
         _ => { let _ = app.print_help(); Ok(()) },
     };
 
-    match out {
-        Ok(_) => {},
-        Err(e) => {
-            println!("Error: {}", e.description())
-        },
-    }
+    if let Err(e) = out {
+        debug!("{:?}", e);
+        println!("Error: {}", e.description());
+        if let Some(cause) = e.cause() {
+            println!("-> {}", cause);
+        }
+    };
 }

@@ -11,10 +11,12 @@ quick_error! {
     #[derive(Debug)]
     pub enum GerritError {
         ChangeInputProblem {
+            description("Problem with ChangeInput")
             display("Problem with ChangeInput")
         }
 
         GetReviewerListProblem(r: String) {
+            description("Reviewer List problem")
             display("ProblemWithReviewer: {}", r)
         }
 
@@ -25,7 +27,17 @@ quick_error! {
         }
 
         GerritApi(status: u32, text: String) {
-            display("HTTP status: {}, text: {}", status, text)
+            description("HTTP problem")
+            display("HTTP status: {}, text: {}", status, text.trim())
+        }
+
+        NoRevisionInfoEntry {
+            description("No revision returned")
+            display("No revision returned")
+        }
+
+        ChangeIDEmpty {
+            description("ChangeID is empty")
         }
     }
 }
@@ -70,6 +82,8 @@ quick_error! {
             from()
         }
         GerritApiError(err: GerritError) {
+            display("{}", err)
+            from()
         }
     }
 }
