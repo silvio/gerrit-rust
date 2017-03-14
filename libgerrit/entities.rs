@@ -866,3 +866,53 @@ pub enum ReviewerInput {
     /// V2.13
     Gerrit0213(ReviewerInput0213),
 }
+
+/// The `AbandonInput` entity contains information for abandoning a change
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AbandonInput0209 {
+    /// Message to be added as review comment to the change when abandoning the change.
+    pub message: Option<String>,
+}
+
+/// Abandon notifications to ...
+#[allow(non_camel_case_types)]
+#[derive(Deserialize, Serialize, Debug)]
+pub enum AbandonInputNotify0213 {
+    /// Noone
+    NONE,
+    /// only owner
+    OWNER,
+    /// owner and reviewer
+    OWNER_REVIEWERS,
+    /// to all
+    ALL,
+}
+
+/// The `AbandonInput` entity contains information for abandoning a change
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AbandonInput0213 {
+    /// Message to be added as review comment to the change when abandoning the change
+    pub message: Option<String>,
+    /// Notify handling that defines to whom email notifications should be sent after the change is
+    /// abandoned.
+    /// Allowed values are NONE, OWNER, OWNER_REVIEWERS and ALL.
+    /// If not set, the default is ALL.
+    pub notify: Option<AbandonInputNotify0213>,
+}
+
+/// `AbandonInput` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug)]
+#[serde(untagged)]
+pub enum AbandonInput {
+    /// V2.09
+    Gerrit0209(AbandonInput0209),
+    /// V2.13
+    Gerrit0213(AbandonInput0213),
+}
+
+/// The `RestoreInput` entity contains information for restoring a change.
+#[derive(Deserialize, Serialize, Debug)]
+pub struct RestoreInput {
+    /// Message to be added as review comment to the change when restoring the change.
+    pub message: Option<String>,
+}

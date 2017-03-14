@@ -204,4 +204,92 @@ impl Changes {
             Err(x) => { Err(GGRError::General(format!("Problem '{}' with deleting reviewer for {}", x, changeid))) },
         }
     }
+
+    /// api function 'POST /changes/{change-id}/abandon'
+    ///
+    /// notify is one of `none`, `owner`, `owner_reviewers` or `all`.
+    pub fn abandon_change(&self, changeid: &str, message: Option<&str>, notify: Option<&str>) -> GGRResult<entities::ChangeInfo> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
+        }
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/abandon", path, changeid);
+
+        let notify = match notify {
+            Some(notify) => {
+                match notify {
+                    "all" => Some(entities::AbandonInputNotify0213::ALL),
+                    "owner" => Some(entities::AbandonInputNotify0213::OWNER),
+                    "owner_reviewer" => Some(entities::AbandonInputNotify0213::OWNER_REVIEWERS),
+                    _ => Some(entities::AbandonInputNotify0213::NONE),
+                }
+            },
+            None => None
+        };
+
+        let abandoninput0209 = entities::AbandonInput::Gerrit0209(entities::AbandonInput0209 {
+                message: message.map(|s| s.to_string()),
+        });
+        let abandoninput0213 = entities::AbandonInput::Gerrit0213(entities::AbandonInput0213 {
+                message: message.map(|s| s.to_string()),
+                notify: notify,
+        });
+
+        use config;
+        let config = config::Config::new(self.call.get_base());
+        if let Ok(version) = config.get_version() {
+            let out = if version.starts_with("2.9") {
+                self.call.post(&path, &abandoninput0209)
+            } else if version.starts_with("2.13") {
+                self.call.post(&path, &abandoninput0213)
+            } else {
+                return Err(GGRError::General(format!("Only support for gerit version 2.9 and 2.13. Yor server is {}",version)));
+            };
+
+            let ret = match out {
+                Ok(cr) => {
+                    match cr.status() {
+                        200 => {
+                            cr.convert::<entities::ChangeInfo>()
+                        },
+                        409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                        _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                    }
+                },
+                Err(x) => { Err(GGRError::General(format!("Problem '{}' with abandon change for {}", x, changeid))) },
+            };
+
+            return ret;
+        }
+
+        Err(GGRError::General("Could not determine gerrit server version".into()))
+    }
+
+    /// api function 'POST /changes/{change-id}/restore'
+    pub fn restore_change(&self, changeid: &str, message: Option<&str>) -> GGRResult<entities::ChangeInfo> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
+        }
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/restore", path, changeid);
+
+        let restoreinput = entities::RestoreInput {
+            message: message.map(|s| s.to_string()),
+        };
+
+        match self.call.post(&path, &restoreinput) {
+            Ok(cr) => {
+                match cr.status() {
+                    200 => {
+                        cr.convert::<entities::ChangeInfo>()
+                    },
+                    409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                }
+            },
+            Err(x) => { Err(GGRError::General(format!("Problem '{}' with restore change for {}", x, changeid))) },
+        }
+    }
 }
