@@ -324,12 +324,12 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
                     if remove {
                         let reviewer = &reviewer[1..];
-                        let id = match ci {
+                        let (id, subject) = match ci {
                             entities::ChangeInfo::Gerrit0209(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                             entities::ChangeInfo::Gerrit0213(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                         };
                         if let Err(res) = gerrit.changes().delete_reviewer(id, reviewer) {
@@ -340,15 +340,15 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                 x => { println!("Other error: {:?}", x);}
                             };
                         } else {
-                            println!("{}: removed", reviewer);
+                            println!("* {:5.5} [{:20.20}] reviewer '{}' removed", id, subject, reviewer);
                         };
                     } else {
-                        let id = match ci {
+                        let (id, subject) = match ci {
                             entities::ChangeInfo::Gerrit0209(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                             entities::ChangeInfo::Gerrit0213(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                         };
                         match gerrit.changes().add_reviewer(id, reviewer) {
@@ -358,14 +358,20 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                         match g.reviewers {
                                             Some(reviewerret) => {
                                                 for r in reviewerret {
-                                                    println!("{}, {}, {}: added",
+                                                    println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
+                                                             id,
+                                                             subject,
                                                              r.name.unwrap_or("unkown name".into()),
                                                              r.email.unwrap_or("unkown mail".into()),
                                                              r._account_id.unwrap_or(99999999));
                                                 }
                                             },
                                             None => {
-                                                println!("Not added: {}", g.error.unwrap_or("No error message from gerrit server provided".into()));
+                                                println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
+                                                         id,
+                                                         subject,
+                                                         reviewer,
+                                                         g.error.unwrap_or("No error message from gerrit server provided".into()));
                                             },
                                         }
                                     },
@@ -373,14 +379,20 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                         match g.reviewers {
                                             Some(reviewerret) => {
                                                 for r in reviewerret {
-                                                    println!("{}, {}, {}: added",
+                                                    println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
+                                                             id,
+                                                             subject,
                                                              r.name.unwrap_or("unkown name".into()),
                                                              r.email.unwrap_or("unkown mail".into()),
                                                              r._account_id.unwrap_or(99999999));
                                                 }
                                             },
                                             None => {
-                                                println!("Not added: {}", g.error.unwrap_or("No error message from gerrit server provided".into()));
+                                                println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
+                                                         id,
+                                                         subject,
+                                                         reviewer,
+                                                         g.error.unwrap_or("No error message from gerrit server provided".into()));
                                             },
                                         }
                                     },
