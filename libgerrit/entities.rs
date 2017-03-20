@@ -169,7 +169,7 @@ pub struct GitPersonInfo {
     /// The timestamp of when this identity was constructed.
     pub date: String,
     /// The timezone offset from UTC of when this identity was constructed.
-    pub tz: u16,
+    pub tz: i32,
 }
 
 /// `CommitInfoParents`, same as `CommitInfo` but commit is string
