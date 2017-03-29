@@ -136,6 +136,34 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .takes_value(true)
                 )
     )
+    .subcommand(SubCommand::with_name("verify")
+                .about("verify topic")
+                .arg(Arg::with_name("topicname")
+                     .help("topicname for verify of a complete topic")
+                     .required(true)
+                     .takes_value(true)
+                     .index(1)
+                )
+                .arg(Arg::with_name("code-review")
+                     .help("change 'Code-Review' label")
+                     .takes_value(true)
+                     .short("c")
+                     .long("code-review")
+                     .possible_values(&["~2", "~1", "0", "1", "+1", "2", "+2"])
+                )
+                .arg(Arg::with_name("label")
+                     .help("add other label and value: 'Verify: +1'")
+                     .takes_value(true)
+                     .short("l")
+                     .long("label")
+                )
+                .arg(Arg::with_name("message")
+                     .help("message append to all changes")
+                     .takes_value(true)
+                     .short("m")
+                     .long("message")
+                )
+    )
 }
 
 /// manage subfunction of `topic` command
@@ -154,6 +182,7 @@ pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
         ("reviewer", Some(y)) => { reviewer(y, config) },
         ("abandon", Some(y)) => { abandon(y, config) },
         ("restore", Some(y)) => { restore(y, config) },
+        ("verify", Some(y)) => { verify(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -324,12 +353,12 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
                     if remove {
                         let reviewer = &reviewer[1..];
-                        let id = match ci {
+                        let (id, subject) = match ci {
                             entities::ChangeInfo::Gerrit0209(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                             entities::ChangeInfo::Gerrit0213(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                         };
                         if let Err(res) = gerrit.changes().delete_reviewer(id, reviewer) {
@@ -340,15 +369,15 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                 x => { println!("Other error: {:?}", x);}
                             };
                         } else {
-                            println!("{}: removed", reviewer);
+                            println!("* {:5.5} [{:20.20}] reviewer '{}' removed", id, subject, reviewer);
                         };
                     } else {
-                        let id = match ci {
+                        let (id, subject) = match ci {
                             entities::ChangeInfo::Gerrit0209(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                             entities::ChangeInfo::Gerrit0213(ref x) => {
-                                &x.id
+                                (&x.change_id, &x.subject)
                             },
                         };
                         match gerrit.changes().add_reviewer(id, reviewer) {
@@ -358,14 +387,20 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                         match g.reviewers {
                                             Some(reviewerret) => {
                                                 for r in reviewerret {
-                                                    println!("{}, {}, {}: added",
+                                                    println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
+                                                             id,
+                                                             subject,
                                                              r.name.unwrap_or("unkown name".into()),
                                                              r.email.unwrap_or("unkown mail".into()),
                                                              r._account_id.unwrap_or(99999999));
                                                 }
                                             },
                                             None => {
-                                                println!("Not added: {}", g.error.unwrap_or("No error message from gerrit server provided".into()));
+                                                println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
+                                                         id,
+                                                         subject,
+                                                         reviewer,
+                                                         g.error.unwrap_or("No error message from gerrit server provided".into()));
                                             },
                                         }
                                     },
@@ -373,14 +408,20 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                         match g.reviewers {
                                             Some(reviewerret) => {
                                                 for r in reviewerret {
-                                                    println!("{}, {}, {}: added",
+                                                    println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
+                                                             id,
+                                                             subject,
                                                              r.name.unwrap_or("unkown name".into()),
                                                              r.email.unwrap_or("unkown mail".into()),
                                                              r._account_id.unwrap_or(99999999));
                                                 }
                                             },
                                             None => {
-                                                println!("Not added: {}", g.error.unwrap_or("No error message from gerrit server provided".into()));
+                                                println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
+                                                         id,
+                                                         subject,
+                                                         reviewer,
+                                                         g.error.unwrap_or("No error message from gerrit server provided".into()));
                                             },
                                         }
                                     },
@@ -551,6 +592,82 @@ fn restore(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     Ok(())
 }
 
+/// verify a topic
+fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let topicname = y.value_of("topicname").expect("problem with topicname");
+    let message = y.value_of("message");
+
+    let review = {
+        let mut r = entities::ReviewInfo {
+            labels: HashMap::new(),
+        };
+
+        if let Some(label) = y.value_of("label") {
+            if label.contains(':') {
+                let mut labelvalue = label.splitn(2, ':');
+                let label = labelvalue.next().unwrap_or("").trim();
+                let value = labelvalue.next().unwrap_or("").trim();
+
+                if ! label.is_empty() && ! value.is_empty() {
+                    let value = match value {
+                        "~2" | "-2" => -2,
+                        "~1" | "-1" => -1,
+                        "0" | "+0" | "-0" => 0,
+                        "1" | "+1" => 1,
+                        "2" | "+2" => 2,
+                        _ => return Err(GGRError::General("Wrong value for label. Only support for (-2,-1,0,1,2)".into())),
+                    };
+                    r.labels.entry(label.into()).or_insert(value);
+                }
+            }
+        };
+
+        if let Some(codereview) = y.value_of("code-review") {
+            let codereview = match codereview {
+                "~2" => -2,
+                "~1" => -1,
+                "0" => 0,
+                "1" => 1,
+                "2" => 2,
+                _ => return Err(GGRError::General("Wrong code-review parameter".into())),
+            };
+            r.labels.entry("Code-Review".into()).or_insert(codereview);
+        };
+
+        if r.labels.is_empty() {
+            None
+        } else {
+            Some(r)
+        }
+    };
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+    let mut changes = gerrit.changes();
+
+    if let Ok(changeinfos) = changes.add_query_part(format!("topic:{}", topicname)).add_label("CURRENT_REVISION").query_changes() {
+        for ci in changeinfos {
+            let (id, changeid, revision, subject) = match ci {
+                entities::ChangeInfo::Gerrit0209(x) => {
+                    debug!("{:?}", x);
+                    (x.id.clone(), x.change_id.clone(), x.current_revision.unwrap_or_else(|| "".into()), x.subject)
+                },
+                entities::ChangeInfo::Gerrit0213(x) => {
+                    debug!("{:?}", x);
+                    (x.id.clone(), x.change_id.clone(), x.current_revision.unwrap_or_else(|| "".into()), x.subject)
+                },
+            };
+
+            let changes = gerrit.changes();
+
+            match changes.set_review(&id, &revision, message, review.clone()) {
+                Ok(reviewinfo) => println!("* {:5.5} {:20.20}, applied: {:?}", changeid, subject, reviewinfo.labels),
+                Err(err) => println!("* {:5.5} {:20.20}, not applied: {}", changeid, subject, err),
+            };
+        }
+    }
+
+    Ok(())
+}
 
 /// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
 ///

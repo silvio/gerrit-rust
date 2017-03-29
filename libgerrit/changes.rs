@@ -292,4 +292,40 @@ impl Changes {
             Err(x) => { Err(GGRError::General(format!("Problem '{}' with restore change for {}", x, changeid))) },
         }
     }
+
+    /// api function 'POST /changes/{change-id}/revisions/{revision-id}/review'
+    pub fn set_review(&self, changeid: &str, revisionid: &str, message: Option<&str>, labels: Option<entities::ReviewInfo>) -> GGRResult<entities::ReviewInfo> {
+        if changeid.is_empty() || revisionid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
+        }
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/revisions/{}/review", path, changeid, revisionid);
+
+        use std::collections::HashMap;
+
+        #[derive(Serialize)]
+        struct Review {
+            message: Option<String>,
+            labels: HashMap<String, i8>,
+        };
+
+        let review = Review {
+            message: message.map(|s| s.to_string()),
+            labels: labels.unwrap_or(entities::ReviewInfo{ labels: HashMap::new() }).labels,
+        };
+
+        match self.call.post(&path, &review) {
+            Ok(cr) => {
+                match cr.status() {
+                    200 => {
+                        cr.convert::<entities::ReviewInfo>()
+                    },
+                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                }
+            },
+            Err(x) => { Err(GGRError::General(format!("Problem '{}' with set review for {}", x, changeid))) },
+        }
+
+    }
 }
