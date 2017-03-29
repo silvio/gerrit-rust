@@ -916,3 +916,175 @@ pub struct RestoreInput {
     /// Message to be added as review comment to the change when restoring the change.
     pub message: Option<String>,
 }
+
+/// The `CommentRange` entity describes the range of an inline comment
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CommentRange {
+    /// The start line number of the range
+    pub start_line: u64,
+    /// The character position in the start line.
+    pub start_character: u64,
+    /// The end line number of the range
+    pub end_line: u64,
+    /// The character position in the end line
+    pub end_character: u64,
+}
+
+/// The `CommentInput` entity contains information for creating an inline comment
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CommentInput0209 {
+    /// Must be gerritcodereview#comment if provided.
+    pub kind: Option<String>,
+    /// The URL encoded UUID of the comment if an existing draft comment should be updated.
+    pub id: Option<String>,
+    /// The path of the file for which the inline comment should be added.
+    /// Doesn’t need to be set if contained in a map where the key is the file path.
+    pub path: Option<String>,
+    /// The side on which the comment should be added.
+    /// Allowed values are REVISION and PARENT.
+    /// If not set, the default is REVISION.
+    pub side: Option<String>,
+    /// The number of the line for which the comment should be added.
+    /// 0 if it is a file comment.
+    /// If neither line nor range is set, a file comment is added.
+    /// If range is set, this should equal the end line of the range.
+    pub line: Option<u64>,
+    /// The range of the comment as a CommentRange entity.
+    pub range: Option<CommentRange>,
+    /// The URL encoded UUID of the comment to which this comment is a reply.
+    pub in_reply_to: Option<String>,
+    /// The timestamp of this comment.
+    /// Accepted but ignored.
+    pub updated: Option<String>,
+    /// The comment message.
+    /// If not set and an existing draft comment is updated, the existing draft comment is deleted.
+    pub message: Option<String>,
+}
+
+/// The `ReviewInput` entity contains information for adding a review to a revision
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewInput0209 {
+    /// The message to be added as review comment.
+    pub message: Option<String>,
+    /// The votes that should be added to the revision as a map that maps the label names to the
+    /// voting values.
+    pub labels: Option<HashMap<String, i8>>,
+    /// The comments that should be added as a map that maps a file path to a list of CommentInput
+    /// entities.
+    pub comments: Option<HashMap<String, CommentInput0209>>,
+    /// Whether all labels are required to be within the user’s permitted ranges based on access
+    /// controls.
+    /// If true, attempting to use a label not granted to the user will fail the entire modify
+    /// operation early.
+    /// If false, the operation will execute anyway, but the proposed labels will be modified to be
+    /// the "best" value allowed by the access controls.
+    pub struct_labels: Option<bool>,
+    /// Draft handling that defines how draft comments are handled that are already in the database
+    /// but that were not also described in this input.
+    /// Allowed values are DELETE, PUBLISH and KEEP.
+    /// If not set, the default is DELETE.
+    pub drafts: Option<String>,
+    /// Notify handling that defines to whom email notifications should be sent after the review is
+    /// stored.
+    /// Allowed values are NONE, OWNER, OWNER_REVIEWERS and ALL.
+    /// If not set, the default is ALL.
+    pub notify: Option<String>,
+    /// {account-id} the review should be posted on behalf of. To use this option the caller must
+    /// have been granted labelAs-NAME permission for all keys of labels.
+    pub on_behalf_of: Option<String>,
+}
+
+/// The `CommentInput` entity contains information for creating an inline comment
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct CommentInput0213 {
+    /// The URL encoded UUID of the comment if an existing draft comment should be updated
+    pub id: Option<String>,
+    /// The path of the file for which the inline comment should be added.
+    /// Doesn’t need to be set if contained in a map where the key is the file path
+    pub path: Option<String>,
+    /// The side on which the comment should be added.
+    /// Allowed values are REVISION and PARENT.
+    /// If not set, the default is REVISION.
+    pub side: Option<String>,
+    /// The number of the line for which the comment should be added.
+    /// 0 if it is a file comment.
+    /// If neither line nor range is set, a file comment is added.
+    /// If range is set, this value is ignored in favor of the end_line of the range.
+    pub line: Option<String>,
+    /// The range of the comment as a CommentRange entity
+    pub range: Option<CommentRange>,
+    /// The URL encoded UUID of the comment to which this comment is a reply
+    pub in_reply_to: Option<String>,
+    /// The timestamp of this comment.
+    /// Accepted but ignored
+    pub updated: Option<String>,
+    /// The comment message.
+    /// If not set and an existing draft comment is updated, the existing draft comment is deleted.
+    pub message: Option<String>,
+    /// Value of the tag field. Only allowed on draft comment
+    /// inputs; for published comments, use the tag field in
+    /// link#review-input[ReviewInput]
+    pub tag: Option<String>,
+}
+
+/// The `ReviewInput` entity contains information for adding a review to a revision.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(deny_unknown_fields)]
+pub struct ReviewInput0213 {
+    /// The message to be added as review comment
+    pub message: Option<String>,
+    /// Apply this tag to the review comment message, votes, and inline comments. Tags may be used
+    /// by CI or other automated systems to distinguish them from human reviews. Comments with
+    /// specific tag values can be filtered out in the web UI.
+    pub tag: Option<String>,
+    /// The votes that should be added to the revision as a map that maps the label names to the
+    /// voting values.
+    pub labels: Option<HashMap<String, i8>>,
+    /// The comments that should be added as a map that maps a file path to a list of CommentInput
+    /// entities
+    pub comments: Option<CommentInput0213>,
+    /// Whether all labels are required to be within the user’s permitted ranges based on access
+    /// controls.
+    /// If true, attempting to use a label not granted to the user will fail the entire modify
+    /// operation early.
+    /// If false, the operation will execute anyway, but the proposed labels will be modified to be
+    /// the "best" value allowed by the access controls
+    pub strict_labels: Option<bool>,
+    /// Draft handling that defines how draft comments are handled that are already in the database
+    /// but that were not also described in this input.
+    /// Allowed values are DELETE, PUBLISH, PUBLISH_ALL_REVISIONS and KEEP. All values except
+    /// PUBLISH_ALL_REVISIONS operate only on drafts for a single revision.
+    /// If not set, the default is DELETE.
+    pub drafts: Option<String>,
+    /// Notify handling that defines to whom email notifications should be sent after the review is
+    /// stored.
+    /// Allowed values are NONE, OWNER, OWNER_REVIEWERS and ALL.
+    /// If not set, the default is ALL.
+    pub notify: Option<String>,
+    /// If true, comments with the same content at the same place will be omitted
+    pub omit_duplicate_comments: Option<bool>,
+    /// {account-id} the review should be posted on behalf of. To use this option the caller must
+    /// have been granted labelAs-NAME permission for all keys of labels.
+    pub on_behalf_of: Option<String>,
+}
+
+/// `ReviewInput` differs between Gerrit server/protocoll versions. This enum hold them together.
+#[derive(Deserialize, Serialize, Debug, Clone)]
+#[serde(untagged)]
+pub enum ReviewInput {
+    /// V2.09
+    Gerrit0209(Box<ReviewInput0209>),
+    /// V2.13
+    Gerrit0213(Box<ReviewInput0213>),
+}
+
+/// The `ReviewInfo` entity contains information about a review
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct ReviewInfo {
+    /// The labels of the review as a map that maps the label names to the voting values.
+    pub labels: HashMap<String, i8>,
+}

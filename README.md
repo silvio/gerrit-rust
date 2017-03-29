@@ -120,12 +120,13 @@ Some design considarations here.
         Rename OLDTOPIC to TOPIC
         *   [ ] make OLDTOPIC optional, the current topic is renamed
 
-    *   [ ] `ggr topic verify [<TOPICNAME>] <LABEL> [<MESSAGE>]`
-        Verify all commits of a topic TOPICNAME with a label LABEL
-        (-2|-1|0|+1|+2|=) and a optional message. Be aware the messages is
-        appended as note on ALL commits in this topic.
-        *   [ ] Label `=` means not changing the current review label value,
-            only a append a message
+    *   [x] **0.1.19** `ggr topic verify [<TOPICNAME>] [-c <code-review>] [-l "<revie-label>"] [-m <MESSAGE>]`  
+        Gerrits labels are configurable on server side. Via `-l` option the
+        label can be accessed. (e.g. `-l "Code-Review:2"`). Option `-c <VALUE>`
+        is a convenient option for `-l "Code-Review:<VALUE>"`. Currently only
+        `-2/-1/0/1/2` as values for labels possible.
+        Additionaly a message can appended on all commits of a topic.
+        *   [ ] Without option a overview of review process is printed
 
 * Query changes
 
@@ -200,7 +201,7 @@ Some design considarations here.
             *   [ ] Get Revision Actions
             *   [ ] Get Review
             *   [ ] Get Related Changes
-            *   [ ] Set Review
+            *   [x] **0.2.3** Set Review
             *   [ ] Rebase Revision
             *   [ ] Submit Revision
             *   [ ] Publish Draft Revision
