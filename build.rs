@@ -25,6 +25,8 @@ fn main() {
         .arg("describe")
         .arg("--dirty")
         .arg("--tags")
+        .arg("--match")
+        .arg("v*")
         .output();
 
     let cargo_version = env!("CARGO_PKG_VERSION").to_owned();
