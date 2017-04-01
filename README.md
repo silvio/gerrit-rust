@@ -3,7 +3,13 @@
 # Introduction
 
 `gerrit-rust` is a console client for gerrit written in rust. This is a **rust
-learner** project. Have patience with me :-)  
+learner** project. Have patience with me :-)
+
+Currently tested with Gerrit V02.09 and V02.13.
+
+## Contribution
+
+Common github workflow: fork, clone, branch, commit, push and then pullrequest.
 I'm happy about every PR, but I will ask questions about changes to learn from
 your knowledge.
 

@@ -146,42 +146,27 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid or reviewer is empty".into())));
         }
 
-        use config;
-        let config = config::Config::new(self.call.get_base());
-        if let Ok(version) = config.get_version() {
-            let (path, _) = self.build_url();
-            let path = format!("{}/{}/reviewers", path, changeid);
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/reviewers", path, changeid);
 
-            let reviewerinput = if version.starts_with("2.9") {
-                entities::ReviewerInput::Gerrit0209(entities::ReviewerInput0209 {
-                    reviewer: reviewer.into(),
-                    confirmed: None,
-                })
-            } else if version.starts_with("2.13") {
-                entities::ReviewerInput::Gerrit0213(entities::ReviewerInput0213 {
-                    reviewer: reviewer.into(),
-                    state: None,
-                    confirmed: None,
-                })
-            } else {
-                return Err(GGRError::General(format!("Only support for gerit version 2.9 and 2.13. Yor server is {}",version)));
-            };
+        let reviewerinput = entities::ReviewerInput {
+                reviewer: reviewer.into(),
+                confirmed: None,
+                state: None,
+        };
 
-            match self.call.post(&path, &reviewerinput) {
-                Ok(cr) => {
-                    if cr.ok() {
-                        return cr.convert::<entities::AddReviewerResult>();
-                    } else {
-                        return Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())));
-                    }
-                },
-                Err(x) => {
-                    return Err(GGRError::General(format!("Problem '{}' with add reviewer for {}", x, changeid)));
+        match self.call.post(&path, &reviewerinput) {
+            Ok(cr) => {
+                if cr.ok() {
+                    cr.convert::<entities::AddReviewerResult>()
+                } else {
+                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
                 }
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("Problem '{}' with add reviewer for {}", x, changeid)))
             }
         }
-
-        Err(GGRError::General("Could not determine gerrit server version".into()))
     }
 
     /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
@@ -219,51 +204,33 @@ impl Changes {
         let notify = match notify {
             Some(notify) => {
                 match notify {
-                    "all" => Some(entities::AbandonInputNotify0213::ALL),
-                    "owner" => Some(entities::AbandonInputNotify0213::OWNER),
-                    "owner_reviewer" => Some(entities::AbandonInputNotify0213::OWNER_REVIEWERS),
-                    _ => Some(entities::AbandonInputNotify0213::NONE),
+                    "all" => Some(entities::AbandonInputNotify::ALL),
+                    "owner" => Some(entities::AbandonInputNotify::OWNER),
+                    "owner_reviewer" => Some(entities::AbandonInputNotify::OWNER_REVIEWERS),
+                    _ => Some(entities::AbandonInputNotify::NONE),
                 }
             },
             None => None
         };
 
-        let abandoninput0209 = entities::AbandonInput::Gerrit0209(entities::AbandonInput0209 {
-                message: message.map(|s| s.to_string()),
-        });
-        let abandoninput0213 = entities::AbandonInput::Gerrit0213(entities::AbandonInput0213 {
+        let abandoninput = entities::AbandonInput {
                 message: message.map(|s| s.to_string()),
                 notify: notify,
-        });
+        };
 
-        use config;
-        let config = config::Config::new(self.call.get_base());
-        if let Ok(version) = config.get_version() {
-            let out = if version.starts_with("2.9") {
-                self.call.post(&path, &abandoninput0209)
-            } else if version.starts_with("2.13") {
-                self.call.post(&path, &abandoninput0213)
-            } else {
-                return Err(GGRError::General(format!("Only support for gerit version 2.9 and 2.13. Yor server is {}",version)));
-            };
-
-            let ret = match out {
-                Ok(cr) => {
-                    match cr.status() {
-                        200 => {
-                            cr.convert::<entities::ChangeInfo>()
-                        },
-                        409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                        _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                    }
-                },
-                Err(x) => { Err(GGRError::General(format!("Problem '{}' with abandon change for {}", x, changeid))) },
-            };
-
-            return ret;
+        let out = self.call.post(&path, &abandoninput);
+        match out {
+            Ok(cr) => {
+                match cr.status() {
+                    200 => {
+                        cr.convert::<entities::ChangeInfo>()
+                    },
+                    409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                }
+            },
+            Err(x) => { Err(GGRError::General(format!("Problem '{}' with abandon change for {}", x, changeid))) },
         }
-
-        Err(GGRError::General("Could not determine gerrit server version".into()))
     }
 
     /// api function 'POST /changes/{change-id}/restore'

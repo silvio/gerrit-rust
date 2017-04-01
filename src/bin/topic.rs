@@ -353,15 +353,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
                     if remove {
                         let reviewer = &reviewer[1..];
-                        let (id, subject) = match ci {
-                            entities::ChangeInfo::Gerrit0209(ref x) => {
-                                (&x.change_id, &x.subject)
-                            },
-                            entities::ChangeInfo::Gerrit0213(ref x) => {
-                                (&x.change_id, &x.subject)
-                            },
-                        };
-                        if let Err(res) = gerrit.changes().delete_reviewer(id, reviewer) {
+                        if let Err(res) = gerrit.changes().delete_reviewer(&ci.change_id, reviewer) {
                             match res {
                                 GGRError::GerritApiError(ref x) => {
                                     println!("{}, {}", reviewer, x.description());
@@ -369,61 +361,29 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                 x => { println!("Other error: {:?}", x);}
                             };
                         } else {
-                            println!("* {:5.5} [{:20.20}] reviewer '{}' removed", id, subject, reviewer);
+                            println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
                         };
                     } else {
-                        let (id, subject) = match ci {
-                            entities::ChangeInfo::Gerrit0209(ref x) => {
-                                (&x.change_id, &x.subject)
-                            },
-                            entities::ChangeInfo::Gerrit0213(ref x) => {
-                                (&x.change_id, &x.subject)
-                            },
-                        };
-                        match gerrit.changes().add_reviewer(id, reviewer) {
+                        match gerrit.changes().add_reviewer(&ci.change_id, reviewer) {
                             Ok(addreviewerresult) => {
-                                match addreviewerresult {
-                                    entities::AddReviewerResult::Gerrit0209(g) => {
-                                        match g.reviewers {
-                                            Some(reviewerret) => {
-                                                for r in reviewerret {
-                                                    println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
-                                                             id,
-                                                             subject,
-                                                             r.name.unwrap_or("unkown name".into()),
-                                                             r.email.unwrap_or("unkown mail".into()),
-                                                             r._account_id.unwrap_or(99999999));
-                                                }
-                                            },
-                                            None => {
-                                                println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
-                                                         id,
-                                                         subject,
-                                                         reviewer,
-                                                         g.error.unwrap_or("No error message from gerrit server provided".into()));
-                                            },
+
+                                match addreviewerresult.reviewers {
+                                    Some(reviewerret) => {
+                                        for r in reviewerret {
+                                            println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
+                                                     ci.change_id,
+                                                     ci.subject,
+                                                     r.name.unwrap_or("unkown name".into()),
+                                                     r.email.unwrap_or("unkown mail".into()),
+                                                     r._account_id.unwrap_or(99999999));
                                         }
                                     },
-                                    entities::AddReviewerResult::Gerrit0213(g) => {
-                                        match g.reviewers {
-                                            Some(reviewerret) => {
-                                                for r in reviewerret {
-                                                    println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
-                                                             id,
-                                                             subject,
-                                                             r.name.unwrap_or("unkown name".into()),
-                                                             r.email.unwrap_or("unkown mail".into()),
-                                                             r._account_id.unwrap_or(99999999));
-                                                }
-                                            },
-                                            None => {
-                                                println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
-                                                         id,
-                                                         subject,
-                                                         reviewer,
-                                                         g.error.unwrap_or("No error message from gerrit server provided".into()));
-                                            },
-                                        }
+                                    None => {
+                                        println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
+                                                 ci.change_id,
+                                                 ci.subject,
+                                                 reviewer,
+                                                 addreviewerresult.error.unwrap_or("No error message from gerrit server provided".into()));
                                     },
                                 };
                             },
@@ -440,34 +400,20 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
         // only list reviewers
         for ci in cis {
-            let (id, subject) = match ci {
-                entities::ChangeInfo::Gerrit0209(ref x) => {
-                    (&x.id, &x.subject)
-                },
-                entities::ChangeInfo::Gerrit0213(ref x) => {
-                    (&x.id, &x.subject)
-                },
-            };
-
-            println!("* reviewer for {}:", subject);
-            if let Ok(reviewers) = gerrit.changes().get_reviewers(id) {
+            println!("* reviewer for {}:", ci.subject);
+            if let Ok(reviewers) = gerrit.changes().get_reviewers(&ci.id) {
                 let mut reviewer_list = Vec::new();
                 for reviewer in reviewers {
-                    let (name, username, email, approval) = match reviewer {
-                        entities::ReviewerInfo::Gerrit0209(g) => {
-                            (g.name.unwrap_or_else(|| "unknown".into()), g.username.unwrap_or_else(|| "unknown".into()), g.email.unwrap_or_else(|| "unknown".into()), g.approvals)
-                        },
-                        entities::ReviewerInfo::Gerrit0213(g) => {
-                            (g.name.unwrap_or_else(|| "unknown".into()), g.username.unwrap_or_else(|| "unknown".into()), g.email.unwrap_or_else(|| "unknown".into()), g.approvals)
-                        },
-                    };
-
+                    let (name, username, email, approval) = (
+                        reviewer.name.unwrap_or_else(|| "unknown".into()),
+                        reviewer.username.unwrap_or_else(|| "unknown".into()),
+                        reviewer.email.unwrap_or_else(|| "unknown".into()),
+                        reviewer.approvals
+                    );
                     reviewer_list.push(name.clone());
 
                     if verbose {
-                        println!("  * {:2}/{:2} {:15.15} {:15.15} {}",
-                                 approval.verified.unwrap_or(0), approval.codereview.unwrap_or(0),
-                                 name, username, email);
+                        println!("  * {:?} {:15.15} {:15.15} {}", approval, name, username, email);
                     }
                 }
                 if ! verbose {
@@ -498,31 +444,9 @@ fn abandon(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
         for ci in cis {
 
-            let (changeid, subject) = match ci {
-                entities::ChangeInfo::Gerrit0209(x) => {
-                    (x.change_id, x.subject)
-                },
-                entities::ChangeInfo::Gerrit0213(x) => {
-                    (x.change_id, x.subject)
-                },
-            };
-
-
-
-            let (abid, absubject, abcause) = match gerrit.changes().abandon_change(&changeid, message, None) {
-                Ok(ciret) => {
-                    match ciret {
-                        entities::ChangeInfo::Gerrit0209(x) => {
-                            (x.change_id, x.subject, None)
-                        },
-                        entities::ChangeInfo::Gerrit0213(x) => {
-                            (x.change_id, x.subject, None)
-                        },
-                    }
-                },
-                Err(x) => {
-                    (changeid, subject, Some(x))
-                },
+            let (abid, absubject, abcause) = match gerrit.changes().abandon_change(&ci.change_id, message, None) {
+                Ok(ciret) => (ciret.change_id, ciret.subject, None),
+                Err(x) => (ci.change_id, ci.subject, Some(x)),
             };
 
             match abcause {
@@ -551,31 +475,9 @@ fn restore(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
         for ci in cis {
 
-            let (changeid, subject) = match ci {
-                entities::ChangeInfo::Gerrit0209(x) => {
-                    (x.change_id, x.subject)
-                },
-                entities::ChangeInfo::Gerrit0213(x) => {
-                    (x.change_id, x.subject)
-                },
-            };
-
-
-
-            let (abid, absubject, abcause) = match gerrit.changes().restore_change(&changeid, message) {
-                Ok(ciret) => {
-                    match ciret {
-                        entities::ChangeInfo::Gerrit0209(x) => {
-                            (x.change_id, x.subject, None)
-                        },
-                        entities::ChangeInfo::Gerrit0213(x) => {
-                            (x.change_id, x.subject, None)
-                        },
-                    }
-                },
-                Err(x) => {
-                    (changeid, subject, Some(x))
-                },
+            let (abid, absubject, abcause) = match gerrit.changes().restore_change(&ci.change_id, message) {
+                Ok(ciret) => (ciret.change_id, ciret.subject, None),
+                Err(x) => (ci.change_id, ci.subject, Some(x)),
             };
 
             match abcause {
@@ -646,16 +548,13 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
     if let Ok(changeinfos) = changes.add_query_part(format!("topic:{}", topicname)).add_label("CURRENT_REVISION").query_changes() {
         for ci in changeinfos {
-            let (id, changeid, revision, subject) = match ci {
-                entities::ChangeInfo::Gerrit0209(x) => {
-                    debug!("{:?}", x);
-                    (x.id.clone(), x.change_id.clone(), x.current_revision.unwrap_or_else(|| "".into()), x.subject)
-                },
-                entities::ChangeInfo::Gerrit0213(x) => {
-                    debug!("{:?}", x);
-                    (x.id.clone(), x.change_id.clone(), x.current_revision.unwrap_or_else(|| "".into()), x.subject)
-                },
-            };
+            debug!("{:?}", ci);
+            let (id, changeid, revision, subject) = (
+                ci.id.clone(),
+                ci.change_id.clone(),
+                ci.current_revision.unwrap_or_else(|| "".into()),
+                ci.subject
+            );
 
             let changes = gerrit.changes();
 
@@ -761,46 +660,24 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
             if check_project_names.contains(&String::from(url_to_projectname(&url).unwrap())) {
                 let entity = entity_from_commit(ci, p_tip)?;
 
-                let reference = match *entity {
-                    entities::ChangeInfo::Gerrit0209(ref x) => {
-                        if let Some(ref cur_rev) = x.current_revision {
-                            if let Some(ref revisions) = x.revisions {
-                                if let Some(current_revision) = revisions.get(cur_rev) {
-                                    if let Some(fetchref) = current_revision.fetch.get("http") {
-                                        &fetchref.reference
-                                    } else {
-                                        return Err(GGRError::General("No fetch ref".into()));
-                                    }
+                let reference =
+                    if let Some(ref cur_rev) = entity.current_revision {
+                        if let Some(ref revisions) = entity.revisions {
+                            if let Some(current_revision) = revisions.get(cur_rev) {
+                                if let Some(fetchref) = current_revision.fetch.get("http") {
+                                    &fetchref.reference
                                 } else {
-                                    return Err(GGRError::General("no current revisions".into()));
+                                    return Err(GGRError::General("No fetch ref".into()));
                                 }
                             } else {
-                                return Err(GGRError::General("No revisions".into()));
+                                return Err(GGRError::General("no current revisions".into()));
                             }
                         } else {
-                            return Err(GGRError::General("No cur_rev".into()));
+                            return Err(GGRError::General("No revisions".into()));
                         }
-                    },
-                    entities::ChangeInfo::Gerrit0213(ref x) => {
-                        if let Some(ref cur_rev) = x.current_revision {
-                            if let Some(ref revisions) = x.revisions {
-                                if let Some(current_revision) = revisions.get(cur_rev) {
-                                    if let Some(fetchref) = current_revision.fetch.get("http") {
-                                        &fetchref.reference
-                                    } else {
-                                        return Err(GGRError::General("No fetch ref".into()));
-                                    }
-                                } else {
-                                    return Err(GGRError::General("no current revisions".into()));
-                                }
-                            } else {
-                                return Err(GGRError::General("No revisions".into()));
-                            }
-                        } else {
-                            return Err(GGRError::General("No cur_rev".into()));
-                        }
-                    },
-                };
+                    } else {
+                        return Err(GGRError::General("No cur_rev".into()));
+                    };
 
 
                 let force_string = if force {"+"} else { "" };
@@ -851,16 +728,8 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
     // find involved projects
     let mut list_of_projects = Vec::new();
     for element in changes {
-        let project = match *element {
-            entities::ChangeInfo::Gerrit0209(ref x) => {
-                &x.project
-            },
-            entities::ChangeInfo::Gerrit0213(ref x) => {
-                &x.project
-            },
-        };
-        if !list_of_projects.contains(project) {
-            list_of_projects.push(project.clone());
+        if !list_of_projects.contains(&element.project) {
+            list_of_projects.push(element.project.clone());
         }
     }
 
@@ -871,65 +740,31 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
         let mut list_all_parents = Vec::new();
         // fill a list with all parents
         for element in changes {
-            match *element {
-                entities::ChangeInfo::Gerrit0209(ref element) => {
-                    if let Some(ref cur_revision) = element.current_revision {
-                        if let Some(ref revisions) = element.revisions {
-                            if let Some(cur_revision) = revisions.get(cur_revision) {
-                                if let Some(ref commit) = cur_revision.commit {
-                                    if let Some(ref parents) = commit.parents {
-                                        for p in parents {
-                                            list_all_parents.push(&p.commit);
-                                        }
-                                    }
+            if let Some(ref cur_revision) = element.current_revision {
+                if let Some(ref revisions) = element.revisions {
+                    if let Some(cur_revision) = revisions.get(cur_revision) {
+                        if let Some(ref commit) = cur_revision.commit {
+                            if let Some(ref parents) = commit.parents {
+                                for p in parents {
+                                    list_all_parents.push(&p.commit);
                                 }
                             }
                         }
                     }
-                },
-                entities::ChangeInfo::Gerrit0213(ref element) => {
-                    if let Some(ref cur_revision) = element.current_revision {
-                        if let Some(ref revisions) = element.revisions {
-                            if let Some(cur_revision) = revisions.get(cur_revision) {
-                                if let Some(ref commit) = cur_revision.commit {
-                                    if let Some(ref parents) = commit.parents {
-                                        for p in parents {
-                                            list_all_parents.push(&p.commit);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-            };
+                }
+            }
         }
 
         for element in changes {
-            match *element {
-                entities::ChangeInfo::Gerrit0209(ref element) => {
-                    if element.project == *project {
-                        if let Some(ref cur_revision) = element.current_revision {
-                            if !list_all_parents.contains(&cur_revision) {
-                                // a tip commit is never a parent for a topic
-                                project_tip.insert(project, cur_revision.clone());
-                                break;
-                            }
-                        }
+            if element.project == *project {
+                if let Some(ref cur_revision) = element.current_revision {
+                    if !list_all_parents.contains(&cur_revision) {
+                        // a tip commit is never a parent for a topic
+                        project_tip.insert(project, cur_revision.clone());
+                        break;
                     }
-                },
-                entities::ChangeInfo::Gerrit0213(ref element) => {
-                    if element.project == *project {
-                        if let Some(ref cur_revision) = element.current_revision {
-                            if !list_all_parents.contains(&cur_revision) {
-                                // a tip commit is never a parent for a topic
-                                project_tip.insert(project, cur_revision.clone());
-                                break;
-                            }
-                        }
-                    }
-                },
-            };
+                }
+            }
         }
     }
 
@@ -938,26 +773,13 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
 
 pub fn entity_from_commit<'ci>(changes: &'ci [entities::ChangeInfo], commit: &str) -> GGRResult<&'ci entities::ChangeInfo> {
     for element in changes {
-        match *element {
-            entities::ChangeInfo::Gerrit0209(ref x) => {
-                if let Some(ref revisions) = x.revisions {
-                    for rev in revisions.keys() {
-                        if rev == commit {
-                            return Ok(element);
-                        }
-                    }
+        if let Some(ref revisions) = element.revisions {
+            for rev in revisions.keys() {
+                if rev == commit {
+                    return Ok(element);
                 }
-            },
-            entities::ChangeInfo::Gerrit0213(ref x) => {
-                if let Some(ref revisions) = x.revisions {
-                    for rev in revisions.keys() {
-                        if rev == commit {
-                            return Ok(element);
-                        }
-                    }
-                }
-            },
-        };
+            }
+        }
     }
 
     Err(GGRError::General("no entity found".into()))
