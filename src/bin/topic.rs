@@ -580,6 +580,11 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
     }
 
     if let Ok(changeinfos) = changes.query_changes() {
+        if changeinfos.is_empty() {
+            println!("topic '{}' not found", topicname);
+            return Ok(());
+        }
+
         let project_tip = project_tip(&changeinfos).unwrap();
 
         // try to fetch topic for main_repo and all submodules
