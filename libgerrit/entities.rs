@@ -490,7 +490,7 @@ pub struct ChangeInfo {
     /// for that label.
     /// Only set if detailed labels are requested.
     /// V02.09
-    pub permitted_labels: Option<HashMap<String, LabelInfo>>,
+    pub permitted_labels: Option<HashMap<String, Vec<String>>>,
     /// The reviewers that can be removed by the calling user as a list of AccountInfo entities.
     /// Only set if detailed labels are requested.
     /// V02.09
@@ -510,7 +510,7 @@ pub struct ChangeInfo {
     /// Messages associated with the change as a list of ChangeMessageInfo entities.
     /// Only set if messages are requested.
     /// V02.09
-    pub messages: Option<HashMap<String, ChangeMessageInfo>>,
+    pub messages: Option<Vec<ChangeMessageInfo>>,
     /// The commit ID of the current patch set of this change.
     /// Only set if the current revision is requested or if all revisions are requested.
     /// V02.09
