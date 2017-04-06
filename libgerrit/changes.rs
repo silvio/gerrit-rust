@@ -1,10 +1,13 @@
 
 use call;
+use config;
 use error::GGRError;
 use error::GGRResult;
 use error::GerritError;
 use entities;
 use gerrit::GerritAccess;
+use gerrit::GerritVersion;
+use semver;
 use url;
 
 /// Interface to retrieve Changes information from gerrit server
@@ -46,6 +49,21 @@ impl GerritAccess for Changes {
         querystring = querystring.replace("//", "/");
 
         (String::from("/a/changes/"), querystring)
+    }
+}
+
+impl GerritVersion for Changes {
+    fn check_version(&self, since: String) -> GGRResult<()> {
+        let config = config::Config::new(self.call.get_base());
+        if let Ok(version) = config.get_version() {
+            if semver::Version::parse(&version) < semver::Version::parse(&since) {
+                return Err(GGRError::GerritApiError(GerritError::UnsupportedVersion("POST /changes".into(), version.into(), since.into())));
+            }
+        } else {
+            warn!("server version seems not supported, continuing");
+        }
+
+        Ok(())
     }
 }
 
@@ -95,9 +113,15 @@ impl Changes {
     }
 
     /// api function 'POST /changes'
+    ///
+    /// V02.10
     pub fn create_change(&self, ci: &entities::ChangeInput) -> GGRResult<entities::ChangeInfo> {
         if ci.project.is_empty() || ci.branch.is_empty() || ci.subject.is_empty() {
             return Err(GGRError::GerritApiError(GerritError::ChangeInputProblem));
+        }
+
+        if let Err(x) = self.check_version("2.10.0".into()) {
+            return Err(x);
         }
 
         let (path, _) = self.build_url();
