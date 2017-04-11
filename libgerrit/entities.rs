@@ -124,7 +124,7 @@ pub struct FetchInfo {
     /// The download commands for this patch set as a map that maps the command names to the
     /// commands.
     /// Only set if download commands are requested.
-    pub commands: Option<String>,
+    pub commands: Option<HashMap<String, String>>,
 }
 
 /// The `GitPersonInfo` entity contains information about the author/committer of a commit.
