@@ -579,60 +579,69 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
         changes.add_query_part("status:open");
     }
 
-    if let Ok(changeinfos) = changes.query_changes() {
-        if changeinfos.is_empty() {
-            println!("topic '{}' not found", topicname);
-            return Ok(());
-        }
+    match changes.query_changes() {
+        Ok(changeinfos) => {
+            if changeinfos.is_empty() {
+                println!("topic '{}' not found", topicname);
+                return Ok(());
+            }
+            fetch_changeinfos(&changeinfos, force, local_branch_name, tracking_branch_name)
+        },
+        Err(x) => {
+            println!("topic '{}' problem found: {}", topicname, x);
+            return Err(x);
+        },
+    }
+}
 
-        let project_tip = project_tip(&changeinfos).unwrap();
+pub fn fetch_changeinfos( changeinfos: &[entities::ChangeInfo], force: bool, local_branch_name: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
+    let project_tip = project_tip(&changeinfos).unwrap();
 
-        // try to fetch topic for main_repo and all submodules
-        'next_ptip: for (p_name, p_tip) in project_tip {
-            print!("fetch {} for {} ... ", p_name, p_tip);
-            // check for root repository
-            if let Ok(main_repo) = Repository::open(".") {
-                // check changes on root repository
-                match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
-                    Ok((true,m)) => {
-                        println!("{}", m);
-                        continue;
-                    },
-                    Ok((false, m)) => {
-                        println!("KO\n  Error: {}", m.trim());
-                    },
-                    Err(r) => {
-                        // hide all other errors
-                        let r = r.to_string();
-                        if !r.is_empty() {
-                            println!("KO\nError: {}", r.to_string().trim());
-                        }
+    // try to fetch topic for main_repo and all submodules
+    'next_ptip: for (p_name, p_tip) in project_tip {
+        print!("fetch {} for {} ... ", p_name, p_tip);
+        // check for root repository
+        if let Ok(main_repo) = Repository::open(".") {
+            // check changes on root repository
+            match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
+                Ok((true,m)) => {
+                    println!("{}", m);
+                    continue;
+                },
+                Ok((false, m)) => {
+                    println!("KO\n  Error: {}", m.trim());
+                },
+                Err(r) => {
+                    // hide all other errors
+                    let r = r.to_string();
+                    if !r.is_empty() {
+                        println!("KO\nError: {}", r.to_string().trim());
                     }
-                };
+                }
+            };
 
-                // check for submodules
-                if let Ok(smodules) = main_repo.submodules() {
-                    for smodule in smodules {
-                        if let Ok(sub_repo) = smodule.open() {
-                            match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
-                                Ok((true, m)) => {
-                                    println!("{}", m);
-                                    continue 'next_ptip;
-                                },
-                                Ok((false, m)) => {
-                                    println!("KO\n  Error: {}", m.trim());
-                                    continue;
-                                },
-                                Err(r) => {
-                                    let r = r.to_string();
-                                    if !r.is_empty() {
-                                                println!("KO\nError: {}", r.to_string().trim());
-                                    }
+            // check for submodules
+            if let Ok(smodules) = main_repo.submodules() {
+                for smodule in smodules {
+                    if let Ok(sub_repo) = smodule.open() {
+                        match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
+                            Ok((true, m)) => {
+                                println!("{}", m);
+                                continue 'next_ptip;
+                            },
+                            Ok((false, m)) => {
+                                println!("KO\n  Error: {}", m.trim());
+                                continue;
+                            },
+                            Err(r) => {
+                                let r = r.to_string();
+                                if !r.is_empty() {
+                                            println!("KO\nError: {}", r.to_string().trim());
                                 }
                             }
-                        } else {
-                            println!("{} not opened", smodule.name().unwrap());
                         }
+                    } else {
+                        println!("{} not opened", smodule.name().unwrap());
                     }
                 }
             }
