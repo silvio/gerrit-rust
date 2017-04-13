@@ -15,43 +15,12 @@ use url;
 /// Interface to retrieve Changes information from gerrit server
 pub struct Changes {
     call: call::Call,
-
-    /// Query Information (`q`-parameter) like "owner:self"
-    querylist: Vec<String>,
-
-    /// Additional fields, like `DOWNLOAD_COMMANDS` or `CURRENT_ACTIONS`
-    labellist: Vec<String>,
 }
 
 impl GerritAccess for Changes {
     // creates ("/a/changes", "pp=0&q="querystring"&o=label&o=label")
     fn build_url(&self) -> (String, String) {
-        let mut querystring = String::from("pp=0");
-        if ! self.querylist.is_empty() {
-            querystring.push_str("&q=");
-            let mut fragment = String::new();
-            for el in &self.querylist {
-                fragment.push_str(el);
-                fragment.push_str("+");
-            }
-            if let Some(x) = fragment.chars().last() {
-                if x == '+' {
-                    fragment = fragment.trim_right_matches(x).to_string();
-                }
-            };
-
-            querystring = format!("{}{}", querystring, fragment);
-        };
-
-        if ! self.labellist.is_empty() {
-            for label in &self.labellist {
-                querystring = format!("{}&o={}", querystring, &label);
-            }
-        }
-
-        querystring = querystring.replace("//", "/");
-
-        (String::from("/a/changes/"), querystring)
+        (String::from("/a/changes/"), "".into())
     }
 }
 
@@ -74,9 +43,51 @@ impl Changes {
     pub fn new(url: &url::Url) -> Changes {
         Changes {
             call: call::Call::new(url),
-            querylist: Vec::new(),
-            labellist: Vec::new(),
         }
+    }
+
+    fn build_query_string<S>(querylist: Option<Vec<S>>) -> String
+        where S: Into<String>  {
+        let mut querystring = String::new();
+        if let Some(querylist) = querylist {
+            if ! querylist.is_empty() {
+                querystring.push_str("&q=");
+                let mut fragment = String::new();
+                for el in querylist {
+                    fragment.push_str(&el.into()[..]);
+                    fragment.push_str("+");
+                }
+                if let Some(x) = fragment.chars().last() {
+                    if x == '+' {
+                        fragment = fragment.trim_right_matches(x).to_string();
+                    }
+                };
+
+                querystring = format!("{}{}", querystring, fragment);
+            };
+        };
+
+        debug!("query-string: '{}'", querystring);
+        querystring
+    }
+
+    fn build_label_string<S>(labellist: Option<Vec<S>>) -> String
+    where S: Into<String> {
+        let mut labelstring = String::new();
+        if let Some(labellist) = labellist {
+            if ! labellist.is_empty() {
+                for label in labellist {
+                    if labelstring.is_empty() {
+                        labelstring = format!("o={}", label.into());
+                    } else {
+                        labelstring = format!("{}&o={}", labelstring, label.into());
+                    }
+                }
+            }
+        };
+
+        debug!("label-string: '{}'", labelstring);
+        labelstring
     }
 
     /// generic helper function for calling of call object
@@ -102,27 +113,22 @@ impl Changes {
         }
     }
 
-    /// This function is subject of future changes
-    pub fn add_query_part<S>(&mut self, q: S) -> &mut Changes
-    where S: Into<String> {
-        self.querylist.push(q.into());
-        self
-    }
-
-    /// This function is subject of future changes
-    pub fn add_label<S>(&mut self, l: S) -> &mut Changes
-    where S: Into<String> {
-        self.labellist.push(l.into());
-        self
-    }
-
     /// api function 'GET /changes/'
-    ///
-    /// This function is subject of future changes
-    pub fn query_changes(&mut self) -> GGRResult<Vec<entities::ChangeInfo>> {
-        let (path, query) = self.build_url();
+    pub fn query_changes<S>(&mut self, querylist: Option<Vec<S>>, labellist: Option<Vec<S>>) -> GGRResult<Vec<entities::ChangeInfo>>
+    where S: Into<String> {
+        let (path, _) = self.build_url();
 
-        self.call.set_url_query(Some(&query));
+        let mut querystring = format!("pp=0{}", Changes::build_query_string(querylist));
+        let labelstring = Changes::build_label_string(labellist);
+        if ! labelstring.is_empty() {
+            querystring = format!("{}&{}", querystring, labelstring);
+        }
+
+        querystring = querystring.replace("//", "/");
+        querystring = querystring.replace("//", "/");
+        querystring = querystring.replace("//", "/");
+
+        self.call.set_url_query(Some(&querystring));
 
         Changes::execute::<(),Vec<entities::ChangeInfo>>(self, "query change", &path, call::CallMethod::Get, None)
     }
@@ -150,13 +156,9 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
-        if let Some(features) = features {
-            for feature in features {
-                self.add_label(feature);
-            }
-        };
+        let query = Changes::build_label_string(features);
 
-        let (path, query) = self.build_url();
+        let (path, _) = self.build_url();
         let path = format!("{}/{}", path, changeid);
 
         self.call.set_url_query(Some(&query));

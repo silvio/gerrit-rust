@@ -144,7 +144,7 @@ fn changes(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
         ("query", Some(opt)) => {
             let query = opt.value_of("query").unwrap();
 
-            match gerrit.changes().add_query_part(query).query_changes() {
+            match gerrit.changes().query_changes(Some(vec!(query)), None) {
                 Ok(cis) => {
                     for i in cis {
                         println!("* {:?}", i);

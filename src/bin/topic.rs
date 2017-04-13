@@ -343,7 +343,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let verbose = y.is_present("verbose");
 
     let mut gerrit = Gerrit::new(config.get_base_url());
-    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+    if let Ok(cis) = gerrit.changes().query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), None) {
 
         // manipulate reviewer for topic
         if let Some(ref reviewerlist) = y.values_of_lossy("reviewers") {
@@ -441,7 +441,7 @@ fn abandon(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
     let mut gerrit = Gerrit::new(config.get_base_url());
 
-    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+    if let Ok(cis) = gerrit.changes().query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), None) {
         for ci in cis {
 
             let (abid, absubject, abcause) = match gerrit.changes().abandon_change(&ci.change_id, message, None) {
@@ -472,7 +472,7 @@ fn restore(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
     let mut gerrit = Gerrit::new(config.get_base_url());
 
-    if let Ok(cis) = gerrit.changes().add_query_part(format!("topic:{}", topicname)).query_changes() {
+    if let Ok(cis) = gerrit.changes().query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), None) {
         for ci in cis {
 
             let (abid, absubject, abcause) = match gerrit.changes().restore_change(&ci.change_id, message) {
@@ -546,7 +546,7 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
     let mut changes = gerrit.changes();
 
-    if let Ok(changeinfos) = changes.add_query_part(format!("topic:{}", topicname)).add_label("CURRENT_REVISION").query_changes() {
+    if let Ok(changeinfos) = changes.query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), Some(vec!("CURRENT_REVISION"))) {
         for ci in changeinfos {
             debug!("{:?}", ci);
             let (id, changeid, revision, subject) = (
@@ -568,18 +568,18 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     Ok(())
 }
 
-/// Conviention function to fetch topic `topicname` to branch `local_branch_name`.
+/// Convenient function to fetch topic `topicname` to branch `local_branch_name`.
 ///
 /// If branch exists and `force` is true, the branch is moving to new position.
 fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>, closed: bool) -> GGRResult<()> {
     let mut changes = gerrit.changes();
-    changes.add_label("CURRENT_REVISION").add_label("CURRENT_COMMIT");
-    changes.add_query_part(format!("topic:{}", topicname));
+
+    let mut query_part = vec!(format!("topic:{}", topicname));
     if !closed {
-        changes.add_query_part("status:open");
+        query_part.push("status:open".into());
     }
 
-    match changes.query_changes() {
+    match changes.query_changes(Some(query_part), Some(vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into()))) {
         Ok(changeinfos) => {
             if changeinfos.is_empty() {
                 println!("topic '{}' not found", topicname);
@@ -594,6 +594,9 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
     }
 }
 
+/// Convenient function to pull one or more `changeids`
+///
+/// all ancestore commits are pulled from gerrit server too.
 pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, local_branch_name: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
     let project_tip = project_tip(&changeinfos).unwrap();
 

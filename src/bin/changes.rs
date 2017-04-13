@@ -89,9 +89,8 @@ fn query(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
     let mut changes = gerrit.changes();
 
-    if let Some(userquery) = y.values_of_lossy("userquery") {
-        for arg in userquery { changes.add_query_part(arg); }
-    } else {
+    let userquery = y.values_of_lossy("userquery");
+    if userquery.is_none() {
         return Err(GGRError::General("No or bad userquery".into()));
     };
 
@@ -103,13 +102,9 @@ fn query(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let raw = y.is_present("raw");
     let human = y.is_present("human");
 
-    if let Some(ofields) = y.values_of_lossy("ofields") {
-        for arg in ofields {
-            changes.add_label(arg);
-        }
-    };
+    let label_part = y.values_of_lossy("ofields");
 
-    match changes.query_changes() {
+    match changes.query_changes(userquery, label_part) {
         Ok(cis) => {
             let changeinfos = ChangeInfos::new(cis);
 
@@ -269,12 +264,11 @@ fn fetch(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
     match changes.get_change(&*changeid, Some(vec!("CURRENT_REVISION", "DOWNLOAD_COMMANDS", "CURRENT_COMMIT"))) {
         Ok(change) => {
-            topic::fetch_changeinfos(&[change], true, &changeid, None);
+            topic::fetch_changeinfos(&[change], true, &changeid, None)
         },
         Err(x) => {
-            println!("Error on retrival of {}", x);
+            println!("Error on retrival of {}: {}", changeid, x);
+            Ok(())
         }
     }
-
-    Ok(())
 }
