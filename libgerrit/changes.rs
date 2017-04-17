@@ -123,18 +123,7 @@ impl Changes {
 
         self.call.set_url_query(Some(&query));
 
-        match self.call.get(&path) {
-            Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<Vec<entities::ChangeInfo>>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
-                }
-            },
-            Err(x) => {
-                Err(GGRError::General(format!("call problem with: {} and {} ({})", path, query, x)))
-            }
-        }
+        Changes::execute::<(),Vec<entities::ChangeInfo>>(self, "query change", &path, call::CallMethod::Get, None)
     }
 
     /// api function 'POST /changes'
@@ -151,18 +140,7 @@ impl Changes {
 
         let (path, _) = self.build_url();
 
-        match self.call.post(&path, &ci) {
-            Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<entities::ChangeInfo>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
-                }
-            },
-            Err(x) => {
-                Err(GGRError::General(format!("Problem '{}' with change create: {:?}", x, ci)))
-            }
-        }
+        Changes::execute(self, "change create", &path, call::CallMethod::Post, Some(&ci))
     }
 
     /// api function 'GET /changes/{change-id}'
@@ -207,18 +185,7 @@ impl Changes {
 
         let path = format!("{}/{}/reviewers/", path, changeid);
 
-        match self.call.get(&path) {
-            Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<Vec<entities::ReviewerInfo>>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
-                }
-            },
-            Err(x) => {
-                Err(GGRError::General(format!("Problem '{}' with receiving reviewer list for {}", x, changeid)))
-            }
-        }
+        Changes::execute::<(),Vec<entities::ReviewerInfo>>(self, "receiving reviewer list", &path, call::CallMethod::Get, None)
     }
 
     /// api function 'POST /changes/{change-id}/reviewers'
@@ -236,18 +203,7 @@ impl Changes {
                 state: None,
         };
 
-        match self.call.post(&path, &reviewerinput) {
-            Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<entities::AddReviewerResult>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
-                }
-            },
-            Err(x) => {
-                Err(GGRError::General(format!("Problem '{}' with add reviewer for {}", x, changeid)))
-            }
-        }
+        Changes::execute::<&entities::ReviewerInput,entities::AddReviewerResult>(self, "add reviewer", &path, call::CallMethod::Get, Some(&&reviewerinput))
     }
 
     /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
@@ -259,16 +215,7 @@ impl Changes {
         let (path, _) = self.build_url();
         let path = format!("{}/{}/reviewers/{}", path, changeid, reviewer);
 
-        match self.call.delete(&path) {
-            Ok(cr) => {
-                match cr.status() {
-                    200 ... 204 => { Ok(()) },
-                    404 => { Err(GGRError::GerritApiError(GerritError::ReviewerNotFound)) },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap()))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with deleting reviewer for {}", x, changeid))) },
-        }
+        Changes::execute::<(),()>(self, "deleting reviewer", &path, call::CallMethod::Delete, None)
     }
 
     /// api function 'POST /changes/{change-id}/abandon'
@@ -299,19 +246,7 @@ impl Changes {
                 notify: notify,
         };
 
-        let out = self.call.post(&path, &abandoninput);
-        match out {
-            Ok(cr) => {
-                match cr.status() {
-                    200 => {
-                        cr.convert::<entities::ChangeInfo>()
-                    },
-                    409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with abandon change for {}", x, changeid))) },
-        }
+        Changes::execute::<&entities::AbandonInput,entities::ChangeInfo>(self, "abandon change", &path, call::CallMethod::Post, Some(&&abandoninput))
     }
 
     /// api function 'POST /changes/{change-id}/restore'
@@ -327,18 +262,7 @@ impl Changes {
             message: message.map(|s| s.to_string()),
         };
 
-        match self.call.post(&path, &restoreinput) {
-            Ok(cr) => {
-                match cr.status() {
-                    200 => {
-                        cr.convert::<entities::ChangeInfo>()
-                    },
-                    409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with restore change for {}", x, changeid))) },
-        }
+        Changes::execute::<&entities::RestoreInput,entities::ChangeInfo>(self, "restore change", &path, call::CallMethod::Post, Some(&&restoreinput))
     }
 
     /// api function 'POST /changes/{change-id}/revisions/{revision-id}/review'
@@ -363,17 +287,6 @@ impl Changes {
             labels: labels.unwrap_or(entities::ReviewInfo{ labels: HashMap::new() }).labels,
         };
 
-        match self.call.post(&path, &review) {
-            Ok(cr) => {
-                match cr.status() {
-                    200 => {
-                        cr.convert::<entities::ReviewInfo>()
-                    },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with set review for {}", x, changeid))) },
-        }
-
+        Changes::execute::<&Review,entities::ReviewInfo>(self, "set review", &path, call::CallMethod::Post, Some(&&review))
     }
 }
