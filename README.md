@@ -259,6 +259,10 @@ Some design considarations here.
     *   [x] **0.1.9** implement a log mechanism to get debugging information
         via loglevel switch
 
+    *   [x] *0.1.20* `ggr changes fetch CHANGEID`
+        Fetchs a changeid CHANGEID and his ancestors. The branch name is the
+        CHANGEID name.
+
     *   [x] **0.1.16** do work to support more than one gerrit server
 
     *   [x] **0.1.14** create a helper script for setup of development

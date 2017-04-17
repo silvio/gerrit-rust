@@ -11,6 +11,7 @@ use gron::ToGron;
 use serde_json;
 use regex;
 use std::collections::HashMap;
+use topic;
 
 /// returns the *Changes* part of gerrit-rusts menu
 pub fn menu<'a, 'b>() -> App<'a, 'b> {
@@ -56,6 +57,15 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                      .conflicts_with("raw")
                 )
         )
+        .subcommand(SubCommand::with_name("fetch")
+                    .about("get one change and his ancestors")
+                    .arg(Arg::with_name("changeid")
+                         .help("the changeid which needs fetched")
+                         .takes_value(true)
+                         .required(true)
+                         .index(1)
+                    )
+        )
 }
 
 /// proxy function of implemented features
@@ -66,6 +76,7 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
 pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
         ("query", Some(y)) => { query(y, config) },
+        ("fetch", Some(y)) => { fetch(y, config) },
         _ => {
             println!("{}", x.usage());
             Ok(())
@@ -249,3 +260,21 @@ impl ChangeInfos {
 
 }
 
+/// get one change and ancestors
+fn fetch(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    let changeid = y.value_of_lossy("changeid").expect("no changeid provided, see help");
+
+    let mut gerrit = Gerrit::new(config.get_base_url());
+    let mut changes = gerrit.changes();
+
+    match changes.get_change(&*changeid, Some(vec!("CURRENT_REVISION", "DOWNLOAD_COMMANDS", "CURRENT_COMMIT"))) {
+        Ok(change) => {
+            topic::fetch_changeinfos(&[change], true, &changeid, None);
+        },
+        Err(x) => {
+            println!("Error on retrival of {}", x);
+        }
+    }
+
+    Ok(())
+}
