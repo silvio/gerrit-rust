@@ -594,7 +594,7 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
     }
 }
 
-pub fn fetch_changeinfos( changeinfos: &[entities::ChangeInfo], force: bool, local_branch_name: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
+pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, local_branch_name: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
     let project_tip = project_tip(&changeinfos).unwrap();
 
     // try to fetch topic for main_repo and all submodules
@@ -674,6 +674,7 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
             if check_project_names.contains(&String::from(url_to_projectname(&url).unwrap())) {
                 let entity = entity_from_commit(ci, p_tip)?;
 
+                /* TODO: rewrite */
                 let reference =
                     if let Some(ref cur_rev) = entity.current_revision {
                         if let Some(ref revisions) = entity.revisions {
@@ -747,6 +748,7 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
         }
     }
 
+    /* TODO: rewrite */
     // find tip of every project
     let mut project_tip: HashMap<String, String> = HashMap::new();
     for project in list_of_projects {
@@ -769,6 +771,7 @@ fn project_tip(changes: &[entities::ChangeInfo]) -> GGRResult<HashMap<String, St
             }
         }
 
+        /* TODO: rewrite */
         for element in changes {
             if element.project == *project {
                 if let Some(ref cur_revision) = element.current_revision {
