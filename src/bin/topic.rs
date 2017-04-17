@@ -607,8 +607,8 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
         if let Ok(main_repo) = Repository::open(".") {
             // check changes on root repository
             match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
-                Ok((true,m)) => {
-                    println!("{}", m);
+                Ok((true,_)) => {
+                    println!("OK");
                     continue;
                 },
                 Ok((false, m)) => {
@@ -628,8 +628,8 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                 for smodule in smodules {
                     if let Ok(sub_repo) = smodule.open() {
                         match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
-                            Ok((true, m)) => {
-                                println!("{}", m);
+                            Ok((true, _)) => {
+                                println!("OK");
                                 continue 'next_ptip;
                             },
                             Ok((false, m)) => {
