@@ -174,8 +174,8 @@ Some design considarations here.
         *   [ ] changes endpoint
             *   [x] **0.2.0** Create change
             *   [x] **0.2.0** Query Changes
-            *   [ ] Get Change
-            *   [ ] Get Change Detail
+            *   [X] **0.2.4** Get Change
+            *   [x] **0.2.4** Get Change Detail
             *   [ ] Get Topic
             *   [ ] Set Topic
             *   [ ] Delete Topic

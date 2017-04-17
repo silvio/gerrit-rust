@@ -54,7 +54,7 @@ fn handle_req<W: Write>(handle: &mut curl::easy::Easy,
 
 /// https actions
 #[derive(PartialEq, Debug)]
-enum CallMethod {
+pub enum CallMethod {
     Get,
     Post,
     Put,
@@ -110,7 +110,7 @@ impl Call {
 
     /// call the do_request function two times. One with digest and the other with basic http
     /// authentication methods. The first success returnes a CallResponse
-    fn request<S: Serialize>(&self, method: CallMethod, path: &str, body: Option<&S>) -> GGRResult<CallResponse> {
+    pub fn request<S: Serialize>(&self, method: CallMethod, path: &str, body: Option<&S>) -> GGRResult<CallResponse> {
         let mut sendurl = self.base.clone();
         // double replace for pathes with three ///.
         let complete_path = format!("{}/{}", sendurl.path(), path).replace("//", "/").replace("//", "/");

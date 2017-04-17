@@ -8,6 +8,8 @@ use entities;
 use gerrit::GerritAccess;
 use gerrit::GerritVersion;
 use semver;
+use serde;
+use std;
 use url;
 
 /// Interface to retrieve Changes information from gerrit server
@@ -76,6 +78,29 @@ impl Changes {
         }
     }
 
+    /// generic helper function for calling of call object
+    ///
+    /// The `desc` parameter is a short description for  error messages, its embedded into 'Problem
+    /// '...' with <DESC>'.
+    /// The call is executed with the `path` parameter and the `httpmethod` with `uploaddata` for
+    /// `Put` and `Post` http methods.
+    fn execute<INPUT,OUTPUT>(c: &Changes, desc: &str, path: &str, httpmethod: call::CallMethod, uploaddata: Option<&INPUT>) -> GGRResult<OUTPUT>
+    where INPUT: serde::Serialize + std::fmt::Debug,
+          OUTPUT: serde::Deserialize
+    {
+        match c.call.request(httpmethod, path, uploaddata) {
+            Ok(cr) => {
+                match cr.status() {
+                    200 => cr.convert::<OUTPUT>(),
+                    status => { Err(GGRError::GerritApiError(GerritError::GerritApi(status, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
+                }
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("Problem '{}' with {}", x, desc)))
+            }
+        }
+    }
+
     /// This function is subject of future changes
     pub fn add_query_part<S>(&mut self, q: S) -> &mut Changes
     where S: Into<String> {
@@ -138,6 +163,38 @@ impl Changes {
                 Err(GGRError::General(format!("Problem '{}' with change create: {:?}", x, ci)))
             }
         }
+    }
+
+    /// api function 'GET /changes/{change-id}'
+    pub fn get_change(&mut self, changeid: &str, features: Option<Vec<&str>>) -> GGRResult<entities::ChangeInfo> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
+        }
+
+        if let Some(features) = features {
+            for feature in features {
+                self.add_label(feature);
+            }
+        };
+
+        let (path, query) = self.build_url();
+        let path = format!("{}/{}", path, changeid);
+
+        self.call.set_url_query(Some(&query));
+
+        Changes::execute::<(),entities::ChangeInfo>(self, "get change", &path, call::CallMethod::Get, None)
+    }
+
+    /// api function 'GET /changes/{change-id}/detail'
+    pub fn get_change_detail(&self, changeid: &str) -> GGRResult<entities::ChangeInfo> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
+        }
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/detail", path, changeid);
+
+        Changes::execute::<(),entities::ChangeInfo>(self, "get change detail", &path, call::CallMethod::Get, None)
     }
 
     /// api function `GET /changes/{change-id}/reviewers/'
@@ -295,7 +352,7 @@ impl Changes {
 
         use std::collections::HashMap;
 
-        #[derive(Serialize)]
+        #[derive(Serialize, Debug)]
         struct Review {
             message: Option<String>,
             labels: HashMap<String, i8>,
