@@ -26,8 +26,9 @@ pub struct Changes {
 impl GerritAccess for Changes {
     // creates ("/a/changes", "pp=0&q="querystring"&o=label&o=label")
     fn build_url(&self) -> (String, String) {
-        let mut querystring = String::from("pp=0&q=");
+        let mut querystring = String::from("pp=0");
         if ! self.querylist.is_empty() {
+            querystring.push_str("&q=");
             let mut fragment = String::new();
             for el in &self.querylist {
                 fragment.push_str(el);
