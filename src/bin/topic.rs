@@ -373,8 +373,8 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                             println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
                                                      ci.change_id,
                                                      ci.subject,
-                                                     r.name.unwrap_or("unkown name".into()),
-                                                     r.email.unwrap_or("unkown mail".into()),
+                                                     r.name.unwrap_or_else(|| "unkown name".into()),
+                                                     r.email.unwrap_or_else(|| "unkown mail".into()),
                                                      r._account_id.unwrap_or(99999999));
                                         }
                                     },
@@ -383,7 +383,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                                                  ci.change_id,
                                                  ci.subject,
                                                  reviewer,
-                                                 addreviewerresult.error.unwrap_or("No error message from gerrit server provided".into()));
+                                                 addreviewerresult.error.unwrap_or_else(|| "No error message from gerrit server provided".into()));
                                     },
                                 };
                             },
@@ -589,7 +589,7 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
         },
         Err(x) => {
             println!("topic '{}' problem found: {}", topicname, x);
-            return Err(x);
+            Err(x)
         },
     }
 }
@@ -598,7 +598,7 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
 ///
 /// all ancestore commits are pulled from gerrit server too.
 pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, local_branch_name: &str, tracking_branch_name: Option<&str>) -> GGRResult<()> {
-    let project_tip = project_tip(&changeinfos).unwrap();
+    let project_tip = project_tip(changeinfos).unwrap();
 
     // try to fetch topic for main_repo and all submodules
     'next_ptip: for (p_name, p_tip) in project_tip {
@@ -606,7 +606,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
         // check for root repository
         if let Ok(main_repo) = Repository::open(".") {
             // check changes on root repository
-            match fetch_from_repo(&main_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
+            match fetch_from_repo(&main_repo, changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
                 Ok((true,_)) => {
                     println!("OK");
                     continue;
@@ -627,7 +627,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
             if let Ok(smodules) = main_repo.submodules() {
                 for smodule in smodules {
                     if let Ok(sub_repo) = smodule.open() {
-                        match fetch_from_repo(&sub_repo, &changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
+                        match fetch_from_repo(&sub_repo, changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
                             Ok((true, _)) => {
                                 println!("OK");
                                 continue 'next_ptip;

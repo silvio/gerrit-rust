@@ -77,7 +77,7 @@ impl fmt::Display for Config {
                api = self.api.clone(),
         ));
         try!(writeln!(f, "  user/pass ... : from .netrc file"));
-        write!(f, "  root ........ : {root}", root = self.root.clone())
+        write!(f, "  root ........ : {root}", root = self.root)
     }
 }
 
