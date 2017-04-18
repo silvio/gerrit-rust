@@ -87,7 +87,7 @@ fn main() {
 
     if let Err(e) = out {
         debug!("{:?}", e);
-        println!("Error: {}", e.description());
+        println!("Error: {}", e);
         if let Some(cause) = e.cause() {
             println!("-> {}", cause);
         }
