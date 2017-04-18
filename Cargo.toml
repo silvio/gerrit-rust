@@ -1,6 +1,6 @@
 [package]
 name = "gerrit-rust"
-version = "0.1.19"
+version = "0.1.20"
 authors = ["Silvio Fricke <silvio.fricke@gmail.com>"]
 license = "MPL-2.0"
 readme = "README.md"
@@ -25,7 +25,7 @@ clap = "2.22"
 env_logger = "0.4"
 git2 = "0.6"
 gron = "0.3"
-libgerrit = { path = "libgerrit", version = "0.2.3" }
+libgerrit = { path = "libgerrit", version = "0.2.4" }
 log = "0.3"
 regex = "0.2"
 rustc-serialize = "0.3"
