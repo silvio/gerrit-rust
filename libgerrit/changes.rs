@@ -1,51 +1,41 @@
 
 use call;
+use config;
 use error::GGRError;
 use error::GGRResult;
 use error::GerritError;
 use entities;
 use gerrit::GerritAccess;
+use gerrit::GerritVersion;
+use semver;
+use serde;
+use std;
 use url;
 
 /// Interface to retrieve Changes information from gerrit server
 pub struct Changes {
     call: call::Call,
-
-    /// Query Information (`q`-parameter) like "owner:self"
-    querylist: Vec<String>,
-
-    /// Additional fields, like `DOWNLOAD_COMMANDS` or `CURRENT_ACTIONS`
-    labellist: Vec<String>,
 }
 
 impl GerritAccess for Changes {
     // creates ("/a/changes", "pp=0&q="querystring"&o=label&o=label")
     fn build_url(&self) -> (String, String) {
-        let mut querystring = String::from("pp=0&q=");
-        if ! self.querylist.is_empty() {
-            let mut fragment = String::new();
-            for el in &self.querylist {
-                fragment.push_str(el);
-                fragment.push_str("+");
-            }
-            if let Some(x) = fragment.chars().last() {
-                if x == '+' {
-                    fragment = fragment.trim_right_matches(x).to_string();
-                }
-            };
+        (String::from("/a/changes/"), "".into())
+    }
+}
 
-            querystring = format!("{}{}", querystring, fragment);
-        };
-
-        if ! self.labellist.is_empty() {
-            for label in &self.labellist {
-                querystring = format!("{}&o={}", querystring, &label);
+impl GerritVersion for Changes {
+    fn check_version(&self, since: String) -> GGRResult<()> {
+        let config = config::Config::new(self.call.get_base());
+        if let Ok(version) = config.get_version() {
+            if semver::Version::parse(&version) < semver::Version::parse(&since) {
+                return Err(GGRError::GerritApiError(GerritError::UnsupportedVersion("POST /changes".into(), version.into(), since.into())));
             }
+        } else {
+            warn!("server version seems not supported, continuing");
         }
 
-        querystring = querystring.replace("//", "/");
-
-        (String::from("/a/changes/"), querystring)
+        Ok(())
     }
 }
 
@@ -53,67 +43,139 @@ impl Changes {
     pub fn new(url: &url::Url) -> Changes {
         Changes {
             call: call::Call::new(url),
-            querylist: Vec::new(),
-            labellist: Vec::new(),
         }
     }
 
-    /// This function is subject of future changes
-    pub fn add_query_part<S>(&mut self, q: S) -> &mut Changes
-    where S: Into<String> {
-        self.querylist.push(q.into());
-        self
+    fn build_query_string<S>(querylist: Option<Vec<S>>) -> String
+        where S: Into<String>  {
+        let mut querystring = String::new();
+        if let Some(querylist) = querylist {
+            if ! querylist.is_empty() {
+                querystring.push_str("&q=");
+                let mut fragment = String::new();
+                for el in querylist {
+                    fragment.push_str(&el.into()[..]);
+                    fragment.push_str("+");
+                }
+                if let Some(x) = fragment.chars().last() {
+                    if x == '+' {
+                        fragment = fragment.trim_right_matches(x).to_string();
+                    }
+                };
+
+                querystring = format!("{}{}", querystring, fragment);
+            };
+        };
+
+        debug!("query-string: '{}'", querystring);
+        querystring
     }
 
-    /// This function is subject of future changes
-    pub fn add_label<S>(&mut self, l: S) -> &mut Changes
+    fn build_label_string<S>(labellist: Option<Vec<S>>) -> String
     where S: Into<String> {
-        self.labellist.push(l.into());
-        self
+        let mut labelstring = String::new();
+        if let Some(labellist) = labellist {
+            if ! labellist.is_empty() {
+                for label in labellist {
+                    if labelstring.is_empty() {
+                        labelstring = format!("o={}", label.into());
+                    } else {
+                        labelstring = format!("{}&o={}", labelstring, label.into());
+                    }
+                }
+            }
+        };
+
+        debug!("label-string: '{}'", labelstring);
+        labelstring
     }
 
-    /// api function 'GET /changes/'
+    /// generic helper function for calling of call object
     ///
-    /// This function is subject of future changes
-    pub fn query_changes(&mut self) -> GGRResult<Vec<entities::ChangeInfo>> {
-        let (path, query) = self.build_url();
-
-        self.call.set_url_query(Some(&query));
-
-        match self.call.get(&path) {
+    /// The `desc` parameter is a short description for  error messages, its embedded into 'Problem
+    /// '...' with <DESC>'.
+    /// The call is executed with the `path` parameter and the `httpmethod` with `uploaddata` for
+    /// `Put` and `Post` http methods.
+    fn execute<INPUT,OUTPUT>(c: &Changes, desc: &str, path: &str, httpmethod: call::CallMethod, uploaddata: Option<&INPUT>) -> GGRResult<OUTPUT>
+    where INPUT: serde::Serialize + std::fmt::Debug,
+          OUTPUT: serde::Deserialize
+    {
+        match c.call.request(httpmethod, path, uploaddata) {
             Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<Vec<entities::ChangeInfo>>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
+                match cr.status() {
+                    200 => cr.convert::<OUTPUT>(),
+                    status => { Err(GGRError::GerritApiError(GerritError::GerritApi(status, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
                 }
             },
             Err(x) => {
-                Err(GGRError::General(format!("call problem with: {} and {} ({})", path, query, x)))
+                Err(GGRError::General(format!("Problem '{}' with {}", x, desc)))
             }
         }
     }
 
+    /// api function 'GET /changes/'
+    pub fn query_changes<S>(&mut self, querylist: Option<Vec<S>>, labellist: Option<Vec<S>>) -> GGRResult<Vec<entities::ChangeInfo>>
+    where S: Into<String> {
+        let (path, _) = self.build_url();
+
+        let mut querystring = format!("pp=0{}", Changes::build_query_string(querylist));
+        let labelstring = Changes::build_label_string(labellist);
+        if ! labelstring.is_empty() {
+            querystring = format!("{}&{}", querystring, labelstring);
+        }
+
+        querystring = querystring.replace("//", "/");
+        querystring = querystring.replace("//", "/");
+        querystring = querystring.replace("//", "/");
+
+        self.call.set_url_query(Some(&querystring));
+
+        Changes::execute::<(),Vec<entities::ChangeInfo>>(self, "query change", &path, call::CallMethod::Get, None)
+    }
+
     /// api function 'POST /changes'
+    ///
+    /// V02.10
     pub fn create_change(&self, ci: &entities::ChangeInput) -> GGRResult<entities::ChangeInfo> {
         if ci.project.is_empty() || ci.branch.is_empty() || ci.subject.is_empty() {
             return Err(GGRError::GerritApiError(GerritError::ChangeInputProblem));
         }
 
+        if let Err(x) = self.check_version("2.10.0".into()) {
+            return Err(x);
+        }
+
         let (path, _) = self.build_url();
 
-        match self.call.post(&path, &ci) {
-            Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<entities::ChangeInfo>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
-                }
-            },
-            Err(x) => {
-                Err(GGRError::General(format!("Problem '{}' with change create: {:?}", x, ci)))
-            }
+        Changes::execute(self, "change create", &path, call::CallMethod::Post, Some(&ci))
+    }
+
+    /// api function 'GET /changes/{change-id}'
+    pub fn get_change(&mut self, changeid: &str, features: Option<Vec<&str>>) -> GGRResult<entities::ChangeInfo> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
+
+        let query = Changes::build_label_string(features);
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}", path, changeid);
+
+        self.call.set_url_query(Some(&query));
+
+        Changes::execute::<(),entities::ChangeInfo>(self, "get change", &path, call::CallMethod::Get, None)
+    }
+
+    /// api function 'GET /changes/{change-id}/detail'
+    pub fn get_change_detail(&self, changeid: &str) -> GGRResult<entities::ChangeInfo> {
+        if changeid.is_empty() {
+            return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
+        }
+
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/detail", path, changeid);
+
+        Changes::execute::<(),entities::ChangeInfo>(self, "get change detail", &path, call::CallMethod::Get, None)
     }
 
     /// api function `GET /changes/{change-id}/reviewers/'
@@ -126,18 +188,7 @@ impl Changes {
 
         let path = format!("{}/{}/reviewers/", path, changeid);
 
-        match self.call.get(&path) {
-            Ok(cr) => {
-                if cr.ok() {
-                    cr.convert::<Vec<entities::ReviewerInfo>>()
-                } else {
-                    Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())))
-                }
-            },
-            Err(x) => {
-                Err(GGRError::General(format!("Problem '{}' with receiving reviewer list for {}", x, changeid)))
-            }
-        }
+        Changes::execute::<(),Vec<entities::ReviewerInfo>>(self, "receiving reviewer list", &path, call::CallMethod::Get, None)
     }
 
     /// api function 'POST /changes/{change-id}/reviewers'
@@ -146,42 +197,16 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid or reviewer is empty".into())));
         }
 
-        use config;
-        let config = config::Config::new(self.call.get_base());
-        if let Ok(version) = config.get_version() {
-            let (path, _) = self.build_url();
-            let path = format!("{}/{}/reviewers", path, changeid);
+        let (path, _) = self.build_url();
+        let path = format!("{}/{}/reviewers", path, changeid);
 
-            let reviewerinput = if version.starts_with("2.9") {
-                entities::ReviewerInput::Gerrit0209(entities::ReviewerInput0209 {
-                    reviewer: reviewer.into(),
-                    confirmed: None,
-                })
-            } else if version.starts_with("2.13") {
-                entities::ReviewerInput::Gerrit0213(entities::ReviewerInput0213 {
-                    reviewer: reviewer.into(),
-                    state: None,
-                    confirmed: None,
-                })
-            } else {
-                return Err(GGRError::General(format!("Only support for gerit version 2.9 and 2.13. Yor server is {}",version)));
-            };
+        let reviewerinput = entities::ReviewerInput {
+                reviewer: reviewer.into(),
+                confirmed: None,
+                state: None,
+        };
 
-            match self.call.post(&path, &reviewerinput) {
-                Ok(cr) => {
-                    if cr.ok() {
-                        return cr.convert::<entities::AddReviewerResult>();
-                    } else {
-                        return Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap())));
-                    }
-                },
-                Err(x) => {
-                    return Err(GGRError::General(format!("Problem '{}' with add reviewer for {}", x, changeid)));
-                }
-            }
-        }
-
-        Err(GGRError::General("Could not determine gerrit server version".into()))
+        Changes::execute::<&entities::ReviewerInput,entities::AddReviewerResult>(self, "add reviewer", &path, call::CallMethod::Get, Some(&&reviewerinput))
     }
 
     /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
@@ -193,16 +218,7 @@ impl Changes {
         let (path, _) = self.build_url();
         let path = format!("{}/{}/reviewers/{}", path, changeid, reviewer);
 
-        match self.call.delete(&path) {
-            Ok(cr) => {
-                match cr.status() {
-                    200 ... 204 => { Ok(()) },
-                    404 => { Err(GGRError::GerritApiError(GerritError::ReviewerNotFound)) },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap()).unwrap()))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with deleting reviewer for {}", x, changeid))) },
-        }
+        Changes::execute::<(),()>(self, "deleting reviewer", &path, call::CallMethod::Delete, None)
     }
 
     /// api function 'POST /changes/{change-id}/abandon'
@@ -219,51 +235,21 @@ impl Changes {
         let notify = match notify {
             Some(notify) => {
                 match notify {
-                    "all" => Some(entities::AbandonInputNotify0213::ALL),
-                    "owner" => Some(entities::AbandonInputNotify0213::OWNER),
-                    "owner_reviewer" => Some(entities::AbandonInputNotify0213::OWNER_REVIEWERS),
-                    _ => Some(entities::AbandonInputNotify0213::NONE),
+                    "all" => Some(entities::AbandonInputNotify::ALL),
+                    "owner" => Some(entities::AbandonInputNotify::OWNER),
+                    "owner_reviewer" => Some(entities::AbandonInputNotify::OWNER_REVIEWERS),
+                    _ => Some(entities::AbandonInputNotify::NONE),
                 }
             },
             None => None
         };
 
-        let abandoninput0209 = entities::AbandonInput::Gerrit0209(entities::AbandonInput0209 {
-                message: message.map(|s| s.to_string()),
-        });
-        let abandoninput0213 = entities::AbandonInput::Gerrit0213(entities::AbandonInput0213 {
+        let abandoninput = entities::AbandonInput {
                 message: message.map(|s| s.to_string()),
                 notify: notify,
-        });
+        };
 
-        use config;
-        let config = config::Config::new(self.call.get_base());
-        if let Ok(version) = config.get_version() {
-            let out = if version.starts_with("2.9") {
-                self.call.post(&path, &abandoninput0209)
-            } else if version.starts_with("2.13") {
-                self.call.post(&path, &abandoninput0213)
-            } else {
-                return Err(GGRError::General(format!("Only support for gerit version 2.9 and 2.13. Yor server is {}",version)));
-            };
-
-            let ret = match out {
-                Ok(cr) => {
-                    match cr.status() {
-                        200 => {
-                            cr.convert::<entities::ChangeInfo>()
-                        },
-                        409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                        _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                    }
-                },
-                Err(x) => { Err(GGRError::General(format!("Problem '{}' with abandon change for {}", x, changeid))) },
-            };
-
-            return ret;
-        }
-
-        Err(GGRError::General("Could not determine gerrit server version".into()))
+        Changes::execute::<&entities::AbandonInput,entities::ChangeInfo>(self, "abandon change", &path, call::CallMethod::Post, Some(&&abandoninput))
     }
 
     /// api function 'POST /changes/{change-id}/restore'
@@ -279,18 +265,7 @@ impl Changes {
             message: message.map(|s| s.to_string()),
         };
 
-        match self.call.post(&path, &restoreinput) {
-            Ok(cr) => {
-                match cr.status() {
-                    200 => {
-                        cr.convert::<entities::ChangeInfo>()
-                    },
-                    409 => { Err(GGRError::GerritApiError(GerritError::GerritApi(409, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with restore change for {}", x, changeid))) },
-        }
+        Changes::execute::<&entities::RestoreInput,entities::ChangeInfo>(self, "restore change", &path, call::CallMethod::Post, Some(&&restoreinput))
     }
 
     /// api function 'POST /changes/{change-id}/revisions/{revision-id}/review'
@@ -304,7 +279,7 @@ impl Changes {
 
         use std::collections::HashMap;
 
-        #[derive(Serialize)]
+        #[derive(Serialize, Debug)]
         struct Review {
             message: Option<String>,
             labels: HashMap<String, i8>,
@@ -315,17 +290,6 @@ impl Changes {
             labels: labels.unwrap_or(entities::ReviewInfo{ labels: HashMap::new() }).labels,
         };
 
-        match self.call.post(&path, &review) {
-            Ok(cr) => {
-                match cr.status() {
-                    200 => {
-                        cr.convert::<entities::ReviewInfo>()
-                    },
-                    _ => { Err(GGRError::GerritApiError(GerritError::GerritApi(cr.status(), String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
-                }
-            },
-            Err(x) => { Err(GGRError::General(format!("Problem '{}' with set review for {}", x, changeid))) },
-        }
-
+        Changes::execute::<&Review,entities::ReviewInfo>(self, "set review", &path, call::CallMethod::Post, Some(&&review))
     }
 }

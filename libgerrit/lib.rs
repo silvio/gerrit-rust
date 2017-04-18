@@ -10,6 +10,7 @@
 #[macro_use] extern crate serde_derive;
 extern crate curl;
 extern crate git2;
+extern crate semver;
 extern crate serde;
 extern crate serde_json;
 extern crate url;

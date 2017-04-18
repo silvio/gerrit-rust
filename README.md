@@ -3,7 +3,13 @@
 # Introduction
 
 `gerrit-rust` is a console client for gerrit written in rust. This is a **rust
-learner** project. Have patience with me :-)  
+learner** project. Have patience with me :-)
+
+Currently tested with Gerrit V02.09 and V02.13.
+
+## Contribution
+
+Common github workflow: fork, clone, branch, commit, push and then pullrequest.
 I'm happy about every PR, but I will ask questions about changes to learn from
 your knowledge.
 
@@ -168,8 +174,8 @@ Some design considarations here.
         *   [ ] changes endpoint
             *   [x] **0.2.0** Create change
             *   [x] **0.2.0** Query Changes
-            *   [ ] Get Change
-            *   [ ] Get Change Detail
+            *   [X] **0.2.4** Get Change
+            *   [x] **0.2.4** Get Change Detail
             *   [ ] Get Topic
             *   [ ] Set Topic
             *   [ ] Delete Topic
@@ -252,6 +258,10 @@ Some design considarations here.
 
     *   [x] **0.1.9** implement a log mechanism to get debugging information
         via loglevel switch
+
+    *   [x] *0.1.20* `ggr changes fetch CHANGEID`
+        Fetchs a changeid CHANGEID and his ancestors. The branch name is the
+        CHANGEID name.
 
     *   [x] **0.1.16** do work to support more than one gerrit server
 

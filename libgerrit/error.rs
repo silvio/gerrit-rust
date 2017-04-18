@@ -10,6 +10,11 @@ use url;
 quick_error! {
     #[derive(Debug)]
     pub enum GerritError {
+        UnsupportedVersion(function: String, cur: String, ocu: String) {
+            description("Not supported in this version")
+                display("function '{}' not implemented in gerrit version '{}' (first occurances in '{}'", function, cur, ocu)
+        }
+
         ChangeInputProblem {
             description("Problem with ChangeInput")
             display("Problem with ChangeInput")
