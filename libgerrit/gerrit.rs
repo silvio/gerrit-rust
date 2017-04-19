@@ -6,12 +6,6 @@ use changes;
 use url;
 use error;
 
-/// Interface for Gerrit access.
-pub trait GerritAccess {
-    /// Returns the (path, query) information
-    fn build_url(&self) -> (String, String);
-}
-
 /// Interface for version check
 pub trait GerritVersion {
     /// check about version
