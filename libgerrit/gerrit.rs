@@ -4,17 +4,6 @@
 use config;
 use changes;
 use url;
-use error;
-
-/// Interface for version check
-///
-/// Subject for removing
-/// TODO: remove
-pub trait GerritVersion {
-    /// check about version
-    fn check_version(&self, since: String) -> error::GGRResult<()>;
-}
-
 
 /// `Gerrit` structure for management of several gerrit endpoints
 pub struct Gerrit {
