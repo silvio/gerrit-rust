@@ -5,8 +5,6 @@ use error::GGRError;
 use error::GGRResult;
 use error::GerritError;
 use entities;
-use gerrit::GerritVersion;
-use semver;
 use serde;
 use std;
 use url;
@@ -16,21 +14,6 @@ const ENDPOINT: &'static str = "/a/changes";
 /// Interface to retrieve Changes information from gerrit server
 pub struct Changes {
     call: call::Call,
-}
-
-impl GerritVersion for Changes {
-    fn check_version(&self, since: String) -> GGRResult<()> {
-        let config = config::Config::new(self.call.get_base());
-        if let Ok(version) = config.get_version() {
-            if semver::Version::parse(&version) < semver::Version::parse(&since) {
-                return Err(GGRError::GerritApiError(GerritError::UnsupportedVersion("POST /changes".into(), version.into(), since.into())));
-            }
-        } else {
-            warn!("server version seems not supported, continuing");
-        }
-
-        Ok(())
-    }
 }
 
 impl Changes {
@@ -135,7 +118,8 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeInputProblem));
         }
 
-        if let Err(x) = self.check_version("2.10.0".into()) {
+        let config = config::Config::new(self.call.get_base());
+        if let Err(x) = config.check_version("POST /changes/".into(), "2.10.0".into()) {
             return Err(x);
         }
 
