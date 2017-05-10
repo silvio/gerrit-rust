@@ -572,6 +572,9 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 ///
 /// If branch exists and `force` is true, the branch is moving to new position.
 fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>, closed: bool) -> GGRResult<()> {
+    trace!("fetch_topic: topicname:{} local_branch_name:{} force:{} tracking_branch_name:{:?} closed:{}",
+           topicname, local_branch_name, force, tracking_branch_name, closed);
+
     let mut changes = gerrit.changes();
 
     let mut query_part = vec!(format!("topic:{}", topicname));
@@ -660,6 +663,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
 /// is a status message.
 fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
+    trace!("repo-path:{:?}, p_name:{}, p_tip:{}", repo.path().file_name(), p_name, p_tip);
     if repo.is_bare() {
         return Err(GGRError::General(format!("repository path '{:?}' is bare, we need a workdir", repo.path())));
     }
