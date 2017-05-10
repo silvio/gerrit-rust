@@ -547,6 +547,9 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut changes = gerrit.changes();
 
     if let Ok(changeinfos) = changes.query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), Some(vec!("CURRENT_REVISION"))) {
+        /* overall review result for the commit */
+        let mut overall_review: HashMap<String /*label*/, (i8,i8) /* min/max */> = HashMap::new();
+
         for ci in changeinfos {
             debug!("{:?}", ci);
             let (id, changeid, revision, subject) = (
@@ -558,10 +561,57 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
             let changes = gerrit.changes();
 
-            match changes.set_review(&id, &revision, message, review.clone()) {
-                Ok(reviewinfo) => println!("* {:5.5} {:20.20}, applied: {:?}", changeid, subject, reviewinfo.labels),
-                Err(err) => println!("* {:5.5} {:20.20}, not applied: {}", changeid, subject, err),
-            };
+            if message.is_none() && review.is_none() {
+                // neither review or message is set, we retrieve review information
+
+                match changes.get_reviewers(&id) {
+                    Ok(reviewerinfos) => {
+                        /* a list of reviews for one changeset */
+                        let mut changeinfo_review: HashMap<String /* label */, Vec<i8> /* list of reviews */> = HashMap::new();
+
+                        for ri in reviewerinfos {
+                            for (label, review) in ri.approvals {
+                                let entry = changeinfo_review.entry(label.clone()).or_insert_with(Vec::new);
+                                entry.push(review);
+
+                                let overall = overall_review.entry(label.clone()).or_insert((0,0));
+                                if review < overall.0 {
+                                    overall.0 = review;
+                                }
+                                if review > overall.1 {
+                                    overall.1 = review;
+                                }
+                            };
+                        };
+
+                        println!("* {:5.5} {}:", changeid, subject);
+                        for (label, review) in changeinfo_review {
+                            let mut sortreview = review.clone();
+                            sortreview.sort();
+                            println!("  {:10.10} -> {:?}", label, sortreview);
+                        };
+                    },
+                    Err(err) => {
+                        println!("Problem to recive reviewers: {}", err);
+                        return Err(err);
+                    }
+                };
+            } else {
+                // message and/or review is set we push them to the gerrit server
+                match changes.set_review(&id, &revision, message, review.clone()) {
+                    Ok(reviewinfo) => println!("* {:5.5} {:20.20}, applied: {:?}", changeid, subject, reviewinfo.labels),
+                    Err(err) => println!("* {:5.5} {:20.20}, not applied: {}", changeid, subject, err),
+                };
+            }
+        }
+
+        // Isn't empty only when review and message was empty (we want to show the review results).
+        if !overall_review.is_empty() {
+            println!("\nOverall min/max:");
+
+            for (label, review) in overall_review {
+                println!("* {label:10.10}: {min:+}/{max:+}", label=label, min=review.0, max=review.1);
+            }
         }
     }
 
