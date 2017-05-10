@@ -740,6 +740,8 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                     }
 
                     return Ok((true, try!(String::from_utf8(output_fetch.stdout))));
+                } else {
+                    return Err(GGRError::General(try!(String::from_utf8(output_fetch.stderr))));
                 }
             }
         }
