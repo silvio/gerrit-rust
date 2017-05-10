@@ -615,13 +615,13 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                     continue;
                 },
                 Ok((false, m)) => {
-                    println!("KO\n  Error: {}", m.trim());
+                    println!("FAILED\n  Error: {}", m.trim());
                 },
                 Err(r) => {
                     // hide all other errors
                     let r = r.to_string();
                     if !r.is_empty() {
-                        println!("KO\nError: {}", r.to_string().trim());
+                        println!("FAILED\nError: {}", r.to_string().trim());
                     }
                 }
             };
@@ -636,13 +636,13 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                                 continue 'next_ptip;
                             },
                             Ok((false, m)) => {
-                                println!("KO\n  Error: {}", m.trim());
+                                println!("FAILED\n  Error: {}", m.trim());
                                 continue;
                             },
                             Err(r) => {
                                 let r = r.to_string();
                                 if !r.is_empty() {
-                                            println!("KO\nError: {}", r.to_string().trim());
+                                            println!("FAILED\nError: {}", r.to_string().trim());
                                 }
                             }
                         }
