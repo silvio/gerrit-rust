@@ -177,7 +177,7 @@ impl Changes {
                 state: None,
         };
 
-        Changes::execute::<&entities::ReviewerInput,entities::AddReviewerResult>(self, "add reviewer", &path, call::CallMethod::Get, Some(&&reviewerinput))
+        Changes::execute::<&entities::ReviewerInput,entities::AddReviewerResult>(self, "add reviewer", &path, call::CallMethod::Post, Some(&&reviewerinput))
     }
 
     /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
