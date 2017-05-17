@@ -359,7 +359,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                         if let Err(res) = gerrit.changes().delete_reviewer(&ci.change_id, reviewer) {
                             match res {
                                 GGRError::GerritApiError(ref x) => {
-                                    println!("{}, {}", reviewer, x.description());
+                                    println!("{}, {}", reviewer, x);
                                 },
                                 x => { println!("Other error: {:?}", x);}
                             };
