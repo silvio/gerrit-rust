@@ -3,11 +3,11 @@ use clap::{self, SubCommand, App, Arg};
 use git2::Repository;
 use git2::BranchType;
 use std::collections::HashMap;
-use std::error::Error;
 use std::io::{self, Write};
 use std::process::Command;
 use libgerrit::error::GGRError;
 use libgerrit::error::GGRResult;
+use libgerrit::error::GerritError;
 use libgerrit::gerrit::Gerrit;
 use libgerrit::entities;
 use config;
@@ -354,12 +354,32 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                     if remove {
                         let reviewer = &reviewer[1..];
                         if let Err(res) = gerrit.changes().delete_reviewer(&ci.change_id, reviewer) {
+                            /*
+                             * delete_changes returnes a empty body and a status code. A empty body
+                             * cannot deserialized its break with a error message
+                             * "JsonError(ErrorImpl { code: EofWhileParsingValue, line: 1, column: 0 })"
+                             *
+                             * Now we destructure the objects and check for status code 204 (no
+                             * content) and overwrite this to be okay.
+                             */
                             match res {
                                 GGRError::GerritApiError(ref x) => {
-                                    println!("{}, {}", reviewer, x);
+                                    match *x {
+                                        GerritError::GerritApi(ref status, ref text) => {
+                                            if *status >= 400 {
+                                                println!("{}, ({}: {})", reviewer, status, text);
+                                            } else {
+                                                println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
+                                            }
+                                        },
+                                        ref err => {
+                                            println!("Other error: {:?}", err);
+                                        },
+                                    }
                                 },
                                 x => { println!("Other error: {:?}", x);}
                             };
+
                         } else {
                             println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
                         };
