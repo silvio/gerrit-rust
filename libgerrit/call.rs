@@ -325,7 +325,6 @@ impl CallResponse {
 
     /// Deserializes the response body into the given type
     pub fn deserialize<T: Deserialize>(&self) -> GGRResult<T> {
-        use std::error::Error;
         let body = match self.body {
             Some(ref body) => body,
             None => &b""[..],

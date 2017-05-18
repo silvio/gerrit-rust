@@ -80,7 +80,14 @@ impl Changes {
         match c.call.request(httpmethod, path, uploaddata) {
             Ok(cr) => {
                 match cr.status() {
-                    200 => cr.convert::<OUTPUT>(),
+                    200 | 201 | 202 | 203 | 205 => cr.convert::<OUTPUT>(),
+                    /*
+                     * We need handling of 204 returne code. 204 means no body text what we can
+                     * convert. But the converter try it and crashes with a json failure
+                     * "JsonError(ErrorImpl { code: EofWhileParsingValue, line: 1, column: 0 })"
+                     *
+                     * 204 => cr.convert::<OUTPUT>(),
+                     */
                     status => { Err(GGRError::GerritApiError(GerritError::GerritApi(status, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
                 }
             },
