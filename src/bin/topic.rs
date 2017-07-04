@@ -712,7 +712,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                             Err(r) => {
                                 let r = r.to_string();
                                 if !r.is_empty() {
-                                            println!("FAILED\nError: {}", r.to_string().trim());
+                                    println!("FAILED\nError: {}", r.to_string().trim());
                                 }
                             }
                         }
@@ -722,6 +722,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                 }
             }
         }
+        println!("repo not a submodule, unknown repo or commit");
     }
 
     Ok(())
