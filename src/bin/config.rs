@@ -58,6 +58,8 @@ pub struct Config {
     password: Option<String>,
     /// claims the repository as the topmost repository
     root: bool,
+    /// do not execute anything if dryrun is true
+    dryrun: bool,
 }
 
 impl Default for Config {
@@ -67,6 +69,7 @@ impl Default for Config {
             username: None,
             password: None,
             root: true,
+            dryrun: false,
         }
     }
 }
@@ -104,6 +107,14 @@ impl Config {
 
     pub fn is_root(&self) -> &bool {
         &self.root
+    }
+
+    pub fn dry_run(&self) -> &bool {
+        &self.dryrun
+    }
+
+    pub fn set_dry_run(&mut self, new: bool) {
+        self.dryrun = new
     }
 }
 
