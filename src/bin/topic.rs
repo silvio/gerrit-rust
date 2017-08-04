@@ -1,15 +1,27 @@
 
+// allow some lints for clippy
+#![allow(or_fun_call)]
+
 use clap::{self, SubCommand, App, Arg};
-use git2::Repository;
-use git2::BranchType;
+use git2;
 use std::collections::HashMap;
-use std::error::Error;
+use std::env;
+use std::fs::File;
+use std::io::BufReader;
 use std::io::{self, Write};
+use std::iter;
+use std::ops::Deref;
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
+use std::thread;
 use libgerrit::error::GGRError;
 use libgerrit::error::GGRResult;
+use libgerrit::error::GerritError;
 use libgerrit::gerrit::Gerrit;
 use libgerrit::entities;
+use netrc;
+use url;
 use config;
 
 pub fn menu<'a, 'b>() -> App<'a, 'b> {
@@ -75,6 +87,19 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                     .help("Search changes within closed reviews")
                     .long("closed")
                 )
+                .arg(Arg::with_name("all")
+                     .help("pull all versions of all changes in a topic as tags")
+                     .long("all")
+                     .short("a")
+                 )
+    )
+    .subcommand(SubCommand::with_name("history")
+               .about("Fetch all versions of all changes of a topic to tags")
+               .arg(Arg::with_name("topicname")
+                    .help("topic to pull")
+                    .required(true)
+                    .index(1)
+               )
     )
     .subcommand(SubCommand::with_name("checkout")
                 .about("Checkout a branch on current and all sub repositories")
@@ -178,6 +203,7 @@ pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
         ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
         ("fetch", Some(y)) => { fetch(y, config) },
+        ("history", Some(y)) => { history(y, config) },
         ("checkout", Some(y)) => { checkout(y, config) },
         ("reviewer", Some(y)) => { reviewer(y, config) },
         ("abandon", Some(y)) => { abandon(y, config) },
@@ -209,7 +235,7 @@ fn create(y: &clap::ArgMatches) -> GGRResult<()> {
             let (repo_name, reference_name) = split_repo_reference(&subrep);
 
             print!("* {}: ", &repo_name);
-            repo = try!(Repository::open(&repo_name));
+            repo = try!(git2::Repository::open(&repo_name));
             match repo.revparse_single(&reference_name) {
                 Ok(object) => {
                     let commit = match object.as_commit() {
@@ -239,10 +265,10 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
         None => return Err(GGRError::General("Bad branchname".into())),
     };
 
-    let repo = try!(Repository::discover("."));
+    let repo = try!(git2::Repository::discover("."));
 
     /* remove branch on the current repository */
-    match repo.find_branch(branchname, BranchType::Local) {
+    match repo.find_branch(branchname, git2::BranchType::Local) {
         Ok(mut branch) => {
             print!("* current folder: ");
             if branch.delete().is_err() {
@@ -261,7 +287,7 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
         let submodules = try!(repo.submodules());
         for sm in &submodules {
             let reposub = try!(sm.open());
-            match reposub.find_branch(branchname, BranchType::Local) {
+            match reposub.find_branch(branchname, git2::BranchType::Local) {
                 Ok(mut branch) => {
                     print!("* {}: ", sm.path().display());
                     if branch.delete().is_err() {
@@ -311,6 +337,24 @@ fn test_split_repo_reference() {
     assert_eq!(split_repo_reference("a:b:c"), ("a".to_string(),"b".to_string()));
 }
 
+pub enum OwnedOrRef<'a, T: 'a>
+{
+    Ref(&'a T),
+    Owned(T),
+}
+
+impl<'a, T: 'a> Deref for OwnedOrRef<'a, T>
+{
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        match *self {
+            OwnedOrRef::Ref(val) => val,
+            OwnedOrRef::Owned(ref val) => val,
+        }
+    }
+}
+
 /// fetch topics
 fn fetch(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     if !config.is_root() {
@@ -322,9 +366,236 @@ fn fetch(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let local_branch_name = y.value_of("branchname").unwrap_or(topicname);
     let tracking_branch_name = y.value_of("track");
     let closed = y.is_present("closed");
+    let all = y.is_present("all");
+
+    if all {
+        let _ = history(y, config);
+    }
 
     let mut gerrit = Gerrit::new(config.get_base_url());
     fetch_topic(&mut gerrit, topicname, local_branch_name, force, tracking_branch_name, closed)
+}
+
+/// fetch history of a topic
+fn history(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
+    if !config.is_root() {
+        return Err(GGRError::General("You have to run topic::fetch on the main/root repository".into()));
+    }
+
+    let topicname = y.value_of("topicname").expect("no or bad topicname").to_owned();
+    let mut gerrit = Gerrit::new(config.get_base_url());
+
+    let mut changes = gerrit.changes();
+    let query_part = vec!(format!("topic:{}", topicname));
+
+    let changeinfos = changes.query_changes(Some(query_part), Some(vec!("ALL_REVISIONS".into(), "ALL_COMMITS".into())))?;
+
+    if changeinfos.is_empty() {
+        println!("topic '{}' not found", topicname);
+        return Ok(());
+    }
+
+    for ci in changeinfos {
+        println!("* working on {} {:20} ({:?})", ci.change_id, ci.subject, ci.status);
+        let current_revision = match ci.current_revision {
+            Some(ref x) => x,
+            None => { println!("  no current revision set. No work on this changeid"); continue; }
+        };
+
+        let mut children = vec!();
+
+        let cirevisions = ci.revisions.unwrap();
+
+        for (revision, revisioninfo) in cirevisions {
+            let current_revision = current_revision.clone();
+            let topicname = topicname.clone();
+            let cistatus = ci.status.clone();
+            let dryrun = *config.dry_run();
+
+            children.push(thread::spawn(move || {
+                let is_abandoned = cistatus == entities::ChangeInfoChangeStatus::ABANDONED;
+                let is_newest = (revision == current_revision) && (!is_abandoned);
+                let mark = if is_newest { ">" } else { " " };
+
+                let mut outstr = format!("  {} {} ", mark, revision);
+
+                for (fetchtype, fetchinfo) in &revisioninfo.fetch {
+                    if fetchtype.starts_with("http") {
+                        match history_fetch_from_repo(fetchinfo, &topicname, dryrun) {
+                            Err(x) => {
+                                outstr.push_str(&format!("FAILED: {}", x));
+                            },
+                            Ok(msg) => outstr.push_str(&msg),
+                        };
+                    }
+                }
+                println!("{}", outstr);
+            }));
+        }
+
+        for child in children {
+            let _ = child.join();
+        };
+    }
+
+    Ok(())
+}
+
+/// transform of fetchurl to a tag-name
+///
+/// # Examples
+///
+/// ```rust
+/// assert_eq!(Ok("ggr/topic/85/225285/1"), history_build_tag_from_fetchinfo("refs/changes/85/225285/1"));
+/// ```
+fn history_build_tag_from_fetchinfo(fetchurl: &str) -> GGRResult<&str>
+{
+    if !fetchurl.starts_with("refs/changes/") {
+        return Err(GGRError::General(format!("fetchurl needs to starts with 'refs/changes/' ({})", fetchurl)));
+    }
+
+    // remove 'ref/changes/' and the two digits after this part plus a slash
+    Ok(&fetchurl.trim_left_matches("refs/changes/")[3..])
+}
+
+// TODO: new implementation of fetch_from_repo
+fn history_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, dryrun: bool) -> GGRResult<String>
+{
+    debug!("history fetch {:?}", fetchinfo);
+
+    let main_repo = git2::Repository::open(".")?;
+    let repo = history_find_repo_for_fetchinfo_url(&main_repo, &fetchinfo.url)?;
+
+    /* we have found the rpeository. we can now fetch and tag the revision. */
+    let tag = format!("ggr/{}/{}", topic, history_build_tag_from_fetchinfo(&fetchinfo.reference)?);
+    // TODO: add topicname in ggr/-part
+    let refspecs = format!("{}:refs/tags/{}", fetchinfo.reference, tag);
+    let mut cb = git2::RemoteCallbacks::new();
+    cb.credentials(|url, username, allowed| {
+        debug!("credential callback: {} / {:?} / {:?}", url, username, allowed);
+
+        let homefolder = env::home_dir().ok_or(git2::Error::from_str("set HOME environment variable for searching of netrc"))?;
+        let mut netrcfile = PathBuf::new();
+        netrcfile.push(homefolder);
+        netrcfile.push(".netrc");
+
+        if !netrcfile.exists() {
+            return Err(git2::Error::from_str(&format!("cannot find .netrc file at {:?}", netrcfile.as_path())));
+        }
+
+        debug!("found .netrc file");
+
+        let f = File::open(netrcfile.as_path())
+            .map_err(|x| { git2::Error::from_str(&format!("file: {}", x)) } )?;
+        let reader = BufReader::new(f);
+
+        let netrc = netrc::Netrc::parse(reader)
+            .map_err(|x| { git2::Error::from_str(&format!("{:?}", x)) } )?;
+
+        let repourl = url::Url::parse(url)
+            .map_err(|x| { git2::Error::from_str(&format!("{}", x)) } )?;
+        for (_, &(ref machinehost, ref machine)) in netrc.hosts.iter().enumerate() {
+            debug!("check machinehost: {}", machinehost);
+            if repourl.host_str() == Some(machinehost) {
+                let password = machine.password.as_ref().ok_or(git2::Error::from_str(&format!("no password for machine {} in netrc", machinehost)))?;
+                let passwordplace = iter::repeat("*").take(password.len()).collect::<String>();
+                debug!("use credentials for login: '{}', with password (hidden): '{}'", &machine.login, passwordplace);
+                return git2::Cred::userpass_plaintext(&machine.login, password);
+            }
+        }
+
+        Err(git2::Error::from_str(&format!("no correct netrc entry for repository {} found.", url)))
+    });
+    let mut fetchoptions = git2::FetchOptions::new();
+    fetchoptions.prune(git2::FetchPrune::Off)
+        .update_fetchhead(false)
+        .download_tags(git2::AutotagOption::None)
+        .remote_callbacks(cb);
+
+    // TODO: check tag exists
+
+    let workdir = repo.workdir().ok_or(format!("no workdir for '{}' found", repo.path().to_string_lossy()))?
+        .file_name().unwrap();
+    if !dryrun {
+        match repo.find_remote("origin")?.fetch(&[&refspecs], Some(&mut fetchoptions), Some("")) {
+            Ok(_) => {
+                Ok(format!("OK, pulled '{}' as tag '{}' into {}", fetchinfo.reference, tag, workdir.to_string_lossy()))
+            },
+            Err(x) => {
+                Err(GGRError::General(format!("FAILED! Could not pull {} at {} ({})", refspecs, fetchinfo.url, x.message())))
+            },
+        }
+    } else {
+        Ok(format!("OK, (dry-run) pulled '{}' as tag '{}' into {}", fetchinfo.reference, tag, workdir.to_string_lossy()))
+    }
+}
+
+fn history_extract_projectname<P>(path: &P) -> Option<&str>
+where P: AsRef<Path>
+{
+    path.as_ref()
+        .file_name()
+        .and_then(|p| p.to_str())
+}
+
+/// find a repository in a repo/submodule structure with pointer to url
+fn history_find_repo_for_fetchinfo_url<'a>(main_repo: &'a git2::Repository, url: &str) -> GGRResult<OwnedOrRef<'a, git2::Repository>>
+{
+    debug!("find repo for url {}, starts with {:?}", url, main_repo.path());
+
+    let mut found;
+    let url = history_extract_projectname(&url).ok_or(format!("problem to extract projectname form url {}", url))?;
+    let urls = vec!(
+        String::from(url),
+        format!("{}.git", url),
+    );
+
+    debug!("transformed urls: '{:?}'", urls);
+
+    // check mainrepo handles url
+    let main_repo_remotesnames = main_repo.remotes()?;
+    for main_repo_remotename in main_repo_remotesnames.iter() {
+        if main_repo_remotename.is_none() { continue };
+        let main_repo_remote = main_repo.find_remote(main_repo_remotename.unwrap())?;
+        found = match main_repo_remote.url() {
+            Some(main_repo_url) => {
+                debug!("url:{} === main-url:{}", url, main_repo_url);
+                urls.contains(&String::from(history_extract_projectname(&main_repo_url).ok_or(format!("problem to extract projectname form url {}", main_repo_url))?))
+            },
+            None => false,
+        };
+        if found {
+            debug!("found: {:?}", main_repo.path());
+            return Ok(OwnedOrRef::Ref(main_repo));
+        };
+    }
+
+    // check all submodules for main_repo
+    let submodules = main_repo.submodules()?;
+
+    for submodule in submodules {
+        found = match submodule.url() {
+            Some(submodule_url) => {
+                debug!("url:{} === subm-url:{}", url, submodule_url);
+                urls.contains(&String::from(history_extract_projectname(&submodule_url).ok_or(format!("problem to extract projectname form url {}", submodule_url))?))
+            },
+            None => false,
+        };
+        if found {
+            debug!("found: {:?}", submodule.path());
+            match submodule.open() {
+                Ok(x) => {
+                    return Ok(OwnedOrRef::Owned(x))
+                },
+                Err(x) => {
+                    return Err(String::from(x.message()).into())
+                },
+            }
+        }
+    }
+
+    debug!("not found");
+    Err("The url doesn't match main repo and submodules of mainrepo".into())
 }
 
 /// checkout topics
@@ -354,12 +625,32 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                     if remove {
                         let reviewer = &reviewer[1..];
                         if let Err(res) = gerrit.changes().delete_reviewer(&ci.change_id, reviewer) {
+                            /*
+                             * delete_changes returnes a empty body and a status code. A empty body
+                             * cannot deserialized its break with a error message
+                             * "JsonError(ErrorImpl { code: EofWhileParsingValue, line: 1, column: 0 })"
+                             *
+                             * Now we destructure the objects and check for status code 204 (no
+                             * content) and overwrite this to be okay.
+                             */
                             match res {
                                 GGRError::GerritApiError(ref x) => {
-                                    println!("{}, {}", reviewer, x.description());
+                                    match *x {
+                                        GerritError::GerritApi(ref status, ref text) => {
+                                            if *status >= 400 {
+                                                println!("{}, ({}: {})", reviewer, status, text);
+                                            } else {
+                                                println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
+                                            }
+                                        },
+                                        ref err => {
+                                            println!("Other error: {:?}", err);
+                                        },
+                                    }
                                 },
                                 x => { println!("Other error: {:?}", x);}
                             };
+
                         } else {
                             println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
                         };
@@ -547,6 +838,9 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut changes = gerrit.changes();
 
     if let Ok(changeinfos) = changes.query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), Some(vec!("CURRENT_REVISION"))) {
+        /* overall review result for the commit */
+        let mut overall_review: HashMap<String /*label*/, (i8,i8) /* min/max */> = HashMap::new();
+
         for ci in changeinfos {
             debug!("{:?}", ci);
             let (id, changeid, revision, subject) = (
@@ -558,10 +852,57 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
             let changes = gerrit.changes();
 
-            match changes.set_review(&id, &revision, message, review.clone()) {
-                Ok(reviewinfo) => println!("* {:5.5} {:20.20}, applied: {:?}", changeid, subject, reviewinfo.labels),
-                Err(err) => println!("* {:5.5} {:20.20}, not applied: {}", changeid, subject, err),
-            };
+            if message.is_none() && review.is_none() {
+                // neither review or message is set, we retrieve review information
+
+                match changes.get_reviewers(&id) {
+                    Ok(reviewerinfos) => {
+                        /* a list of reviews for one changeset */
+                        let mut changeinfo_review: HashMap<String /* label */, Vec<i8> /* list of reviews */> = HashMap::new();
+
+                        for ri in reviewerinfos {
+                            for (label, review) in ri.approvals {
+                                let entry = changeinfo_review.entry(label.clone()).or_insert_with(Vec::new);
+                                entry.push(review);
+
+                                let overall = overall_review.entry(label.clone()).or_insert((0,0));
+                                if review < overall.0 {
+                                    overall.0 = review;
+                                }
+                                if review > overall.1 {
+                                    overall.1 = review;
+                                }
+                            };
+                        };
+
+                        println!("* {:5.5} {}:", changeid, subject);
+                        for (label, review) in changeinfo_review {
+                            let mut sortreview = review.clone();
+                            sortreview.sort();
+                            println!("  {:10.10} -> {:?}", label, sortreview);
+                        };
+                    },
+                    Err(err) => {
+                        println!("Problem to recive reviewers: {}", err);
+                        return Err(err);
+                    }
+                };
+            } else {
+                // message and/or review is set we push them to the gerrit server
+                match changes.set_review(&id, &revision, message, review.clone()) {
+                    Ok(reviewinfo) => println!("* {:5.5} {:20.20}, applied: {:?}", changeid, subject, reviewinfo.labels),
+                    Err(err) => println!("* {:5.5} {:20.20}, not applied: {}", changeid, subject, err),
+                };
+            }
+        }
+
+        // Isn't empty only when review and message was empty (we want to show the review results).
+        if !overall_review.is_empty() {
+            println!("\nOverall min/max:");
+
+            for (label, review) in overall_review {
+                println!("* {label:10.10}: {min:+}/{max:+}", label=label, min=review.0, max=review.1);
+            }
         }
     }
 
@@ -572,6 +913,9 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 ///
 /// If branch exists and `force` is true, the branch is moving to new position.
 fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, force: bool, tracking_branch_name: Option<&str>, closed: bool) -> GGRResult<()> {
+    trace!("fetch_topic: topicname:{} local_branch_name:{} force:{} tracking_branch_name:{:?} closed:{}",
+           topicname, local_branch_name, force, tracking_branch_name, closed);
+
     let mut changes = gerrit.changes();
 
     let mut query_part = vec!(format!("topic:{}", topicname));
@@ -604,7 +948,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
     'next_ptip: for (p_name, p_tip) in project_tip {
         print!("fetch {} for {} ... ", p_name, p_tip);
         // check for root repository
-        if let Ok(main_repo) = Repository::open(".") {
+        if let Ok(main_repo) = git2::Repository::open(".") {
             // check changes on root repository
             match fetch_from_repo(&main_repo, changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
                 Ok((true,_)) => {
@@ -612,13 +956,13 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                     continue;
                 },
                 Ok((false, m)) => {
-                    println!("KO\n  Error: {}", m.trim());
+                    println!("FAILED\n  Error: {}", m.trim());
                 },
                 Err(r) => {
                     // hide all other errors
                     let r = r.to_string();
                     if !r.is_empty() {
-                        println!("KO\nError: {}", r.to_string().trim());
+                        println!("FAILED\nError: {}", r.to_string().trim());
                     }
                 }
             };
@@ -633,13 +977,13 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                                 continue 'next_ptip;
                             },
                             Ok((false, m)) => {
-                                println!("KO\n  Error: {}", m.trim());
+                                println!("FAILED\n  Error: {}", m.trim());
                                 continue;
                             },
                             Err(r) => {
                                 let r = r.to_string();
                                 if !r.is_empty() {
-                                            println!("KO\nError: {}", r.to_string().trim());
+                                    println!("FAILED\nError: {}", r.to_string().trim());
                                 }
                             }
                         }
@@ -649,6 +993,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
                 }
             }
         }
+        println!("repo not a submodule, unknown repo or commit");
     }
 
     Ok(())
@@ -659,7 +1004,8 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
 ///
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
 /// is a status message.
-fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
+fn fetch_from_repo(repo: &git2::Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
+    trace!("repo-path:{:?}, p_name:{}, p_tip:{}", repo.path().file_name(), p_name, p_tip);
     if repo.is_bare() {
         return Err(GGRError::General(format!("repository path '{:?}' is bare, we need a workdir", repo.path())));
     }
@@ -701,7 +1047,9 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                 let force_string = if force {"+"} else { "" };
                 let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
 
-                if !force  && repo.find_branch(local_branch_name, BranchType::Local).is_ok() {
+                debug!("refspec: {}", refspec);
+
+                if !force  && repo.find_branch(local_branch_name, git2::BranchType::Local).is_ok() {
                     // Branch exists, but no force
                     return Ok((false, String::from("Branch exists and no force")));
                 }
@@ -711,6 +1059,7 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                     .arg("fetch")
                     .arg(remote.name().unwrap())
                     .arg(refspec)
+                    .arg(if force { "--force" } else { "" })
                     .output());
 
                 if output_fetch.status.success() {
@@ -733,6 +1082,8 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                     }
 
                     return Ok((true, try!(String::from_utf8(output_fetch.stdout))));
+                } else {
+                    return Err(GGRError::General(try!(String::from_utf8(output_fetch.stderr))));
                 }
             }
         }
@@ -808,7 +1159,7 @@ pub fn entity_from_commit<'ci>(changes: &'ci [entities::ChangeInfo], commit: &st
 
 /// Convenient function to checkout a topic
 pub fn checkout_topic(branchname: &str) -> GGRResult<()> {
-        if let Ok(main_repo) = Repository::open(".") {
+        if let Ok(main_repo) = git2::Repository::open(".") {
             let mut out_ok: Vec<String> = Vec::new();
             let mut out_ko: Vec<String> = Vec::new();
 
@@ -881,7 +1232,7 @@ pub fn checkout_topic(branchname: &str) -> GGRResult<()> {
 
 /// convenient function to checkout a `branch` on a `repo`. If `print_status` is true, messages are
 /// printed
-fn checkout_repo(repo: &Repository, branchname: &str) -> GGRResult<()> {
+fn checkout_repo(repo: &git2::Repository, branchname: &str) -> GGRResult<()> {
     if repo.is_bare() {
         return Err(GGRError::General("repository needs to be a workdir and not bare".into()));
     }

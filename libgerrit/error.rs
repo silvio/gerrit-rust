@@ -62,6 +62,10 @@ quick_error! {
             description(err)
             from()
         }
+        General2(err: &'static str) {
+            description(err)
+            from()
+        }
         HTTPError(status: u32) {
             description("HTTP Error")
             display("HTTP not success ({})", status)

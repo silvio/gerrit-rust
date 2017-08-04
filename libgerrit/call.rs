@@ -325,24 +325,13 @@ impl CallResponse {
 
     /// Deserializes the response body into the given type
     pub fn deserialize<T: Deserialize>(&self) -> GGRResult<T> {
-        use std::error::Error;
         let body = match self.body {
             Some(ref body) => body,
             None => &b""[..],
         };
-        match serde_json::from_reader(body) {
-            Err(x) => {
-                debug!("error: {}", x);
-                if let Some(cause) = x.cause() {
-                    println!("cause: {}", cause);
-                }
 
-                Err(GGRError::JsonError(x))
-            },
-            Ok(data) => {
-                Ok(data)
-            }
-        }
+        let x = serde_json::from_reader(body)?;
+        Ok(x)
     }
 
     /// Like `deserialize` but consumes the response and will convert

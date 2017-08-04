@@ -5,38 +5,15 @@ use error::GGRError;
 use error::GGRResult;
 use error::GerritError;
 use entities;
-use gerrit::GerritAccess;
-use gerrit::GerritVersion;
-use semver;
 use serde;
 use std;
 use url;
 
+const ENDPOINT: &'static str = "/a/changes";
+
 /// Interface to retrieve Changes information from gerrit server
 pub struct Changes {
     call: call::Call,
-}
-
-impl GerritAccess for Changes {
-    // creates ("/a/changes", "pp=0&q="querystring"&o=label&o=label")
-    fn build_url(&self) -> (String, String) {
-        (String::from("/a/changes/"), "".into())
-    }
-}
-
-impl GerritVersion for Changes {
-    fn check_version(&self, since: String) -> GGRResult<()> {
-        let config = config::Config::new(self.call.get_base());
-        if let Ok(version) = config.get_version() {
-            if semver::Version::parse(&version) < semver::Version::parse(&since) {
-                return Err(GGRError::GerritApiError(GerritError::UnsupportedVersion("POST /changes".into(), version.into(), since.into())));
-            }
-        } else {
-            warn!("server version seems not supported, continuing");
-        }
-
-        Ok(())
-    }
 }
 
 impl Changes {
@@ -103,7 +80,14 @@ impl Changes {
         match c.call.request(httpmethod, path, uploaddata) {
             Ok(cr) => {
                 match cr.status() {
-                    200 => cr.convert::<OUTPUT>(),
+                    200 | 201 | 202 | 203 | 205 => cr.convert::<OUTPUT>(),
+                    /*
+                     * We need handling of 204 returne code. 204 means no body text what we can
+                     * convert. But the converter try it and crashes with a json failure
+                     * "JsonError(ErrorImpl { code: EofWhileParsingValue, line: 1, column: 0 })"
+                     *
+                     * 204 => cr.convert::<OUTPUT>(),
+                     */
                     status => { Err(GGRError::GerritApiError(GerritError::GerritApi(status, String::from_utf8(cr.get_body().unwrap_or_else(|| "no cause from server".into()))?))) },
                 }
             },
@@ -116,8 +100,6 @@ impl Changes {
     /// api function 'GET /changes/'
     pub fn query_changes<S>(&mut self, querylist: Option<Vec<S>>, labellist: Option<Vec<S>>) -> GGRResult<Vec<entities::ChangeInfo>>
     where S: Into<String> {
-        let (path, _) = self.build_url();
-
         let mut querystring = format!("pp=0{}", Changes::build_query_string(querylist));
         let labelstring = Changes::build_label_string(labellist);
         if ! labelstring.is_empty() {
@@ -130,6 +112,8 @@ impl Changes {
 
         self.call.set_url_query(Some(&querystring));
 
+        let path = format!("{}/", ENDPOINT);
+
         Changes::execute::<(),Vec<entities::ChangeInfo>>(self, "query change", &path, call::CallMethod::Get, None)
     }
 
@@ -141,13 +125,12 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeInputProblem));
         }
 
-        if let Err(x) = self.check_version("2.10.0".into()) {
+        let config = config::Config::new(self.call.get_base());
+        if let Err(x) = config.check_version("POST /changes/".into(), "2.10.0".into()) {
             return Err(x);
         }
 
-        let (path, _) = self.build_url();
-
-        Changes::execute(self, "change create", &path, call::CallMethod::Post, Some(&ci))
+        Changes::execute(self, "change create", ENDPOINT, call::CallMethod::Post, Some(&ci))
     }
 
     /// api function 'GET /changes/{change-id}'
@@ -158,8 +141,7 @@ impl Changes {
 
         let query = Changes::build_label_string(features);
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}", path, changeid);
+        let path = format!("{}/{}", ENDPOINT, changeid);
 
         self.call.set_url_query(Some(&query));
 
@@ -172,8 +154,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}/detail", path, changeid);
+        let path = format!("{}/{}/detail", ENDPOINT, changeid);
 
         Changes::execute::<(),entities::ChangeInfo>(self, "get change detail", &path, call::CallMethod::Get, None)
     }
@@ -184,9 +165,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
-        let (path, _) = self.build_url();
-
-        let path = format!("{}/{}/reviewers/", path, changeid);
+        let path = format!("{}/{}/reviewers/", ENDPOINT, changeid);
 
         Changes::execute::<(),Vec<entities::ReviewerInfo>>(self, "receiving reviewer list", &path, call::CallMethod::Get, None)
     }
@@ -197,8 +176,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid or reviewer is empty".into())));
         }
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}/reviewers", path, changeid);
+        let path = format!("{}/{}/reviewers", ENDPOINT, changeid);
 
         let reviewerinput = entities::ReviewerInput {
                 reviewer: reviewer.into(),
@@ -206,7 +184,7 @@ impl Changes {
                 state: None,
         };
 
-        Changes::execute::<&entities::ReviewerInput,entities::AddReviewerResult>(self, "add reviewer", &path, call::CallMethod::Get, Some(&&reviewerinput))
+        Changes::execute::<&entities::ReviewerInput,entities::AddReviewerResult>(self, "add reviewer", &path, call::CallMethod::Post, Some(&&reviewerinput))
     }
 
     /// api function 'DELETE /changes/{change-id}/reviewers/{account-id}'
@@ -215,8 +193,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::GetReviewerListProblem("changeid or reviewer is empty".into())));
         }
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}/reviewers/{}", path, changeid, reviewer);
+        let path = format!("{}/{}/reviewers/{}", ENDPOINT, changeid, reviewer);
 
         Changes::execute::<(),()>(self, "deleting reviewer", &path, call::CallMethod::Delete, None)
     }
@@ -229,8 +206,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}/abandon", path, changeid);
+        let path = format!("{}/{}/abandon", ENDPOINT, changeid);
 
         let notify = match notify {
             Some(notify) => {
@@ -258,8 +234,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}/restore", path, changeid);
+        let path = format!("{}/{}/restore", ENDPOINT, changeid);
 
         let restoreinput = entities::RestoreInput {
             message: message.map(|s| s.to_string()),
@@ -274,8 +249,7 @@ impl Changes {
             return Err(GGRError::GerritApiError(GerritError::ChangeIDEmpty));
         }
 
-        let (path, _) = self.build_url();
-        let path = format!("{}/{}/revisions/{}/review", path, changeid, revisionid);
+        let path = format!("{}/{}/revisions/{}/review", ENDPOINT, changeid, revisionid);
 
         use std::collections::HashMap;
 

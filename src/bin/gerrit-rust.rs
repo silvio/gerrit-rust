@@ -13,13 +13,15 @@ extern crate regex;
 extern crate rustc_serialize;
 extern crate serde_json;
 extern crate toml_config;
+extern crate url;
+extern crate netrc;
 
 pub mod changes;
 pub mod config;
 pub mod topic;
 pub mod gerritapi;
 
-use clap::App;
+use clap::{Arg, App};
 use libgerrit::error::GGRError;
 use std::error::Error;
 use std::process::exit;
@@ -56,6 +58,10 @@ fn main() {
         .author("Silvio Fricke <silvio.fricke@gmail.com>")
         .version(VERSION)
         .about("some gerrit tools")
+        .arg(Arg::with_name("dry-run")
+             .long("dry-run")
+             .help("Blaming what will be done, but does nothing")
+         )
         .subcommand(topic::menu())
         .subcommand(changes::menu())
         .subcommand(config::menu())
@@ -72,10 +78,12 @@ fn main() {
             exit(-1);
         },
     };
-    let config = config::Config::from_configfile(configfile);
+    let mut config = config::Config::from_configfile(configfile);
     if ! config.is_valid() {
         panic!(GGRError::General("problem with configfile".to_string()));
     }
+
+    config.set_dry_run(matches.is_present("dry-run"));
 
     let out = match matches.subcommand() {
         ("topic", Some(x)) => { topic::manage(x, &config) },

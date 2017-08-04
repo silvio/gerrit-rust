@@ -3,6 +3,7 @@ use call;
 use error::GGRError;
 use error::GGRResult;
 use error::GerritError;
+use semver;
 use url;
 
 const ENDPOINT: &'static str = "/config/server";
@@ -34,6 +35,19 @@ impl Config {
                 Err(GGRError::General(format!("call problem with: {} ({})", path, x)))
             }
         }
+    }
+
+    /// convenience function to check version
+    pub fn check_version(&self, desc: String, since: String) -> GGRResult<()> {
+        if let Ok(version) = self.get_version() {
+            if semver::Version::parse(&version) < semver::Version::parse(&since) {
+                return Err(GGRError::GerritApiError(GerritError::UnsupportedVersion(desc.into(), version.into(), since.into())));
+            }
+        } else {
+            warn!("server version seems not supported, continuing");
+        }
+
+        Ok(())
     }
 }
 

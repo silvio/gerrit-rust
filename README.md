@@ -20,7 +20,7 @@ your knowledge.
 
 # Design
 
-Some design considarations here.
+Some design considerations here.
 
 *   [ ] semver at version 1.0.0. Before this version no semver!
 *   remove external depency to host
@@ -58,6 +58,21 @@ Some design considarations here.
             a `.ggr.config` file
 
     *   [x] **0.1.9** Use `$HOME/.netrc` file to get username and password.
+*   [ ] add a `--dry-run` option to print what we want to do, but we don't do
+        it
+    *   [ ] changes fetch
+    *   [ ] gerritapi changes abandonchange
+    *   [ ] gerritapi changes create
+    *   [ ] topic fetch
+    *   [ ] topic abandon
+    *   [ ] topic checkout
+    *   [ ] topic create
+    *   [ ] topic fetch
+    *   [ ] topic forget
+    *   [x] **0.1.21** topic history
+    *   [ ] topic restore
+    *   [ ] topic reviewer
+    *   [ ] topic verify
 
 *   manage of topics over more than one repository (git submodules like)
 
@@ -102,6 +117,12 @@ Some design considarations here.
         a given branchname.
         * [x] **0.1.9** Add tracking information via `--track <branch>` option.
         * [x] **0.1.14** Add `--closed` option to pull closed (merged) topics
+        * [x] **0.1.21** Add `-a` get history of topic. See `topic history`.
+
+    *   [x] **0.1.21** `ggr topic history <topicname>`  
+        fetch all versions of all changes within <topicname> as tags. The tag
+        format is `ggr/<topicname>/<topicid>`. The `topicid` is the reference
+        number plus version of the patch.
 
     *   [x] **0.1.17** `ggr topic reviewer [<TOPIC>] [-r <+/-MAIL>,...]`  
         Add(+) or remove(-) reviewer (`-r`) from topic. Without an option we
