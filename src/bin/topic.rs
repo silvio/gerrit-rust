@@ -1,7 +1,6 @@
 
 use clap::{self, SubCommand, App, Arg};
-use git2::Repository;
-use git2::BranchType;
+use git2;
 use std::collections::HashMap;
 use std::io::{self, Write};
 use std::process::Command;
@@ -209,7 +208,7 @@ fn create(y: &clap::ArgMatches) -> GGRResult<()> {
             let (repo_name, reference_name) = split_repo_reference(&subrep);
 
             print!("* {}: ", &repo_name);
-            repo = try!(Repository::open(&repo_name));
+            repo = try!(git2::Repository::open(&repo_name));
             match repo.revparse_single(&reference_name) {
                 Ok(object) => {
                     let commit = match object.as_commit() {
@@ -239,10 +238,10 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
         None => return Err(GGRError::General("Bad branchname".into())),
     };
 
-    let repo = try!(Repository::discover("."));
+    let repo = try!(git2::Repository::discover("."));
 
     /* remove branch on the current repository */
-    match repo.find_branch(branchname, BranchType::Local) {
+    match repo.find_branch(branchname, git2::BranchType::Local) {
         Ok(mut branch) => {
             print!("* current folder: ");
             if branch.delete().is_err() {
@@ -261,7 +260,7 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
         let submodules = try!(repo.submodules());
         for sm in &submodules {
             let reposub = try!(sm.open());
-            match reposub.find_branch(branchname, BranchType::Local) {
+            match reposub.find_branch(branchname, git2::BranchType::Local) {
                 Ok(mut branch) => {
                     print!("* {}: ", sm.path().display());
                     if branch.delete().is_err() {
@@ -677,7 +676,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
     'next_ptip: for (p_name, p_tip) in project_tip {
         print!("fetch {} for {} ... ", p_name, p_tip);
         // check for root repository
-        if let Ok(main_repo) = Repository::open(".") {
+        if let Ok(main_repo) = git2::Repository::open(".") {
             // check changes on root repository
             match fetch_from_repo(&main_repo, changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
                 Ok((true,_)) => {
@@ -733,7 +732,7 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
 ///
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
 /// is a status message.
-fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
+fn fetch_from_repo(repo: &git2::Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
     trace!("repo-path:{:?}, p_name:{}, p_tip:{}", repo.path().file_name(), p_name, p_tip);
     if repo.is_bare() {
         return Err(GGRError::General(format!("repository path '{:?}' is bare, we need a workdir", repo.path())));
@@ -776,7 +775,7 @@ fn fetch_from_repo(repo: &Repository, ci: &[entities::ChangeInfo], force: bool, 
                 let force_string = if force {"+"} else { "" };
                 let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
 
-                if !force  && repo.find_branch(local_branch_name, BranchType::Local).is_ok() {
+                if !force  && repo.find_branch(local_branch_name, git2::BranchType::Local).is_ok() {
                     // Branch exists, but no force
                     return Ok((false, String::from("Branch exists and no force")));
                 }
@@ -885,7 +884,7 @@ pub fn entity_from_commit<'ci>(changes: &'ci [entities::ChangeInfo], commit: &st
 
 /// Convenient function to checkout a topic
 pub fn checkout_topic(branchname: &str) -> GGRResult<()> {
-        if let Ok(main_repo) = Repository::open(".") {
+        if let Ok(main_repo) = git2::Repository::open(".") {
             let mut out_ok: Vec<String> = Vec::new();
             let mut out_ko: Vec<String> = Vec::new();
 
@@ -958,7 +957,7 @@ pub fn checkout_topic(branchname: &str) -> GGRResult<()> {
 
 /// convenient function to checkout a `branch` on a `repo`. If `print_status` is true, messages are
 /// printed
-fn checkout_repo(repo: &Repository, branchname: &str) -> GGRResult<()> {
+fn checkout_repo(repo: &git2::Repository, branchname: &str) -> GGRResult<()> {
     if repo.is_bare() {
         return Err(GGRError::General("repository needs to be a workdir and not bare".into()));
     }
