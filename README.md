@@ -153,7 +153,8 @@ Some design considerations here.
         is a convenient option for `-l "Code-Review:<VALUE>"`. Currently only
         `-2/-1/0/1/2` as values for labels possible.
         Additionaly a message can appended on all commits of a topic.
-        *   [ ] Without option a overview of review process is printed
+        *   [x] **0.1.21** Without option a overview of review process is
+            printed
 
 * Query changes
 
