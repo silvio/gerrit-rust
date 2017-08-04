@@ -1059,6 +1059,7 @@ fn fetch_from_repo(repo: &git2::Repository, ci: &[entities::ChangeInfo], force: 
                     .arg("fetch")
                     .arg(remote.name().unwrap())
                     .arg(refspec)
+                    .arg(if force { "--force" } else { "" })
                     .output());
 
                 if output_fetch.status.success() {
