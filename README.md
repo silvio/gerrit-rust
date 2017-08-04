@@ -69,7 +69,7 @@ Some design considerations here.
     *   [ ] topic create
     *   [ ] topic fetch
     *   [ ] topic forget
-    *   [ ] topic history
+    *   [x] **0.1.21** topic history
     *   [ ] topic restore
     *   [ ] topic reviewer
     *   [ ] topic verify
@@ -117,6 +117,12 @@ Some design considerations here.
         a given branchname.
         * [x] **0.1.9** Add tracking information via `--track <branch>` option.
         * [x] **0.1.14** Add `--closed` option to pull closed (merged) topics
+        * [x] **0.1.21** Add `-a` get history of topic. See `topic history`.
+
+    *   [x] **0.1.21** `ggr topic history <topicname>`  
+        fetch all versions of all changes within <topicname> as tags. The tag
+        format is `ggr/<topicname>/<topicid>`. The `topicid` is the reference
+        number plus version of the patch.
 
     *   [x] **0.1.17** `ggr topic reviewer [<TOPIC>] [-r <+/-MAIL>,...]`  
         Add(+) or remove(-) reviewer (`-r`) from topic. Without an option we

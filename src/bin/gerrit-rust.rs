@@ -13,6 +13,8 @@ extern crate regex;
 extern crate rustc_serialize;
 extern crate serde_json;
 extern crate toml_config;
+extern crate url;
+extern crate netrc;
 
 pub mod changes;
 pub mod config;
