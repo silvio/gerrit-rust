@@ -59,7 +59,7 @@ pub struct ActionInfo {
 
 /// `ChangeInfo` helper variant to present a status of a change
 #[allow(non_camel_case_types)]
-#[derive(Deserialize, Serialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone, PartialEq)]
 pub enum ChangeInfoChangeStatus {
     /// new change
     NEW,
