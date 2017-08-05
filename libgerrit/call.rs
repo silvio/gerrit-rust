@@ -3,7 +3,8 @@ use std::fmt;
 use std::cell::{RefMut, RefCell};
 use std::ascii::AsciiExt;
 
-use serde::{Serialize, Deserialize};
+use serde::Serialize;
+use serde::de::DeserializeOwned;
 use serde_json;
 use curl;
 use url;
@@ -324,7 +325,9 @@ impl CallResponse {
     }
 
     /// Deserializes the response body into the given type
-    pub fn deserialize<T: Deserialize>(&self) -> GGRResult<T> {
+    pub fn deserialize<T>(&self) -> GGRResult<T>
+        where T: DeserializeOwned
+    {
         let body = match self.body {
             Some(ref body) => body,
             None => &b""[..],
@@ -336,7 +339,7 @@ impl CallResponse {
 
     /// Like `deserialize` but consumes the response and will convert
     /// failed requests into proper errors.
-    pub fn convert<T: Deserialize>(self) -> GGRResult<T> {
+    pub fn convert<T: DeserializeOwned>(self) -> GGRResult<T> {
         self.to_result().and_then(|x| x.deserialize())
     }
 

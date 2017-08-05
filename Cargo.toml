@@ -20,16 +20,16 @@ path = "src/bin/gerrit-rust.rs"
 doctest = true
 
 [dependencies]
-chrono = "0.3"
-clap = "2.22"
+chrono = "0.4"
+clap = "2.26"
 env_logger = "0.4"
 git2 = "0.6"
-gron = "0.3"
+gron = "0.4"
 libgerrit = { path = "libgerrit", version = "0.2.5" }
 log = "0.3"
 netrc = "0.4.1"
 regex = "0.2"
 rustc-serialize = "0.3"
-serde_json = "0.9"
+serde_json = "1.0"
 toml-config = "0.4"
-url = "1.4.0"
+url = "1.5"

@@ -16,7 +16,7 @@ pub struct Changes {
     call: call::Call,
 }
 
-impl Changes {
+impl<'de> Changes {
     pub fn new(url: &url::Url) -> Changes {
         Changes {
             call: call::Call::new(url),
@@ -75,7 +75,7 @@ impl Changes {
     /// `Put` and `Post` http methods.
     fn execute<INPUT,OUTPUT>(c: &Changes, desc: &str, path: &str, httpmethod: call::CallMethod, uploaddata: Option<&INPUT>) -> GGRResult<OUTPUT>
     where INPUT: serde::Serialize + std::fmt::Debug,
-          OUTPUT: serde::Deserialize
+          OUTPUT: serde::de::DeserializeOwned
     {
         match c.call.request(httpmethod, path, uploaddata) {
             Ok(cr) => {
