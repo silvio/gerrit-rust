@@ -127,6 +127,28 @@ pub struct FetchInfo {
     pub commands: Option<HashMap<String, String>>,
 }
 
+impl FetchInfo {
+    /// simplify `FetchInfo::reference`
+    ///
+    /// Strip 'refs/changes' and the two grouping numbers in reference of FetchInfo.
+    /// Eg: `refs/changes/85/225285/1` -> `225285/1`
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// # use libgerrit::entities::FetchInfo;
+    /// let fi = FetchInfo {
+    ///     url: "http://localhost/blah".into(),
+    ///     reference: "refs/changes/85/225285/1".into(),
+    ///     commands: None,
+    /// };
+    /// assert_eq!("225285/1", fi.get_reference_string());
+    /// ```
+    pub fn get_reference_string(&self) -> &str {
+        &self.reference.trim_left_matches("refs/changes/")[3..]
+    }
+}
+
 /// The `GitPersonInfo` entity contains information about the author/committer of a commit.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GitPersonInfo {

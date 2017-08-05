@@ -441,23 +441,6 @@ fn history(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     Ok(())
 }
 
-/// transform of fetchurl to a tag-name
-///
-/// # Examples
-///
-/// ```rust
-/// assert_eq!(Ok("ggr/topic/85/225285/1"), history_build_tag_from_fetchinfo("refs/changes/85/225285/1"));
-/// ```
-fn history_build_tag_from_fetchinfo(fetchurl: &str) -> GGRResult<&str>
-{
-    if !fetchurl.starts_with("refs/changes/") {
-        return Err(GGRError::General(format!("fetchurl needs to starts with 'refs/changes/' ({})", fetchurl)));
-    }
-
-    // remove 'ref/changes/' and the two digits after this part plus a slash
-    Ok(&fetchurl.trim_left_matches("refs/changes/")[3..])
-}
-
 // TODO: new implementation of fetch_from_repo
 fn history_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, dryrun: bool) -> GGRResult<String>
 {
@@ -467,7 +450,7 @@ fn history_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, dryrun:
     let repo = history_find_repo_for_fetchinfo_url(&main_repo, &fetchinfo.url)?;
 
     /* we have found the rpeository. we can now fetch and tag the revision. */
-    let tag = format!("ggr/{}/{}", topic, history_build_tag_from_fetchinfo(&fetchinfo.reference)?);
+    let tag = format!("ggr/{}/{}", topic, fetchinfo.get_reference_string());
     // TODO: add topicname in ggr/-part
     let refspecs = format!("{}:refs/tags/{}", fetchinfo.reference, tag);
     let mut cb = git2::RemoteCallbacks::new();
