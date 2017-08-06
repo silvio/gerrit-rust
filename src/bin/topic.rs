@@ -201,44 +201,38 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
         None => return Err(GGRError::General("Bad branchname".into())),
     };
 
-    let repo = try!(git2::Repository::discover("."));
+    let repo = git2::Repository::discover(".")?;
+    let recursive = y.is_present("recursive");
 
     /* remove branch on the current repository */
-    match repo.find_branch(branchname, git2::BranchType::Local) {
-        Ok(mut branch) => {
-            print!("* current folder: ");
-            if branch.delete().is_err() {
-                println!("fail");
-            } else {
-                println!("done");
-            }
-        },
-        Err(err) => {
-            return Err(GGRError::from(err));
-        }
-    };
+    print!("* delete {} in {:?}: ", branchname, repo.path());
+    match forget_branch(&repo, branchname) {
+        Ok(_) => { println!("OK"); },
+        Err(x) => { println!("FAILED, ({})", x); }
+    }
 
     /* remove branch on all submodules */
-    if y.is_present("recursive") {
-        let submodules = try!(repo.submodules());
+    if recursive {
+        let submodules = repo.submodules()?;
+
         for sm in &submodules {
-            let reposub = try!(sm.open());
-            match reposub.find_branch(branchname, git2::BranchType::Local) {
-                Ok(mut branch) => {
-                    print!("* {}: ", sm.path().display());
-                    if branch.delete().is_err() {
-                        println!("fail");
-                    } else {
-                        println!("done");
-                    }
-                },
-                Err(err) => {
-                    return Err(GGRError::from(err));
-                }
-            };
+            let reposub = sm.open()?;
+
+            print!("* delete {} in {}: ", branchname, reposub.path().file_name().unwrap().to_string_lossy());
+            match forget_branch(&reposub, branchname) {
+                Ok(_) => { println!("OK"); },
+                Err(x) => { println!("FAILED, ({})", x); }
+            }
         }
     }
     Ok(())
+}
+
+fn forget_branch(repo: &git2::Repository, branchname: &str) -> GGRResult<()>
+{
+    repo.find_branch(branchname, git2::BranchType::Local)?
+        .delete()
+        .map_err(|x| { GGRError::from(x) })
 }
 
 pub enum OwnedOrRef<'a, T: 'a>
