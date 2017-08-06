@@ -37,19 +37,10 @@ Some design considerations here.
             recursive which have no commit and the repositories are clean. Warn
             unclean repositories/branches.
 
-    *   [ ] `ggr topic list -s`  
-        List all development branches and the repositories. With `-s` it
-        includes the commits in the branch like `git submodule summary`.
-
     *   [x] **0.1.8** `ggr topic checkout <BRANCHNAME>`  
         Checkout a branch on all repositories.
         *   [x] **0.1.8** first check base folder if checkout happened sync all
             submodules than checkout changes for topic on subfolders
-
-    *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
-        Push changes to gerrit. Without `-b` its pushed to gerrit. With option
-        `-b` its pushed to a build server. Without branchname the current
-        branch is pushed.
 
     *   [x] **0.1.7** <s>`ggr topic pull ...`</s>  
         same as `ggr topic fetch`. This sub function is renamed because `fetch`
@@ -86,10 +77,6 @@ Some design considerations here.
         *   [ ] `[-n <NONE|OWNER|REVIEWERS|ALL>]` notifiy a group of accounts
             about this abandon action or don't notify (via `NONE`). Default is
             `ALL`.
-
-    *   [ ] `ggr topic rename OLDTOPIC TOPIC`  
-        Rename OLDTOPIC to TOPIC
-        *   [ ] make OLDTOPIC optional, the current topic is renamed
 
     *   [x] **0.1.19** `ggr topic verify [<TOPICNAME>] [-c <code-review>] [-l "<revie-label>"] [-m <MESSAGE>]`  
         Gerrits labels are configurable on server side. Via `-l` option the
@@ -316,6 +303,19 @@ Some design considerations here.
         *   `ggr stat -F 2015-12-31 -T 2016-02-01`: from 01.01.2016T00:00 till 01.02.2016T23:59:59
         *   `ggr stat -F 2016-01-01`: from 02.01.2016T00:00 till now
         *   `ggr stat -T 2016-02-01`: from begin of gerrit usage till 01.02.2016T23:59:59
+
+    *   [ ] `ggr topic list -s`  
+        List all development branches and the repositories. With `-s` it
+        includes the commits in the branch like `git submodule summary`.
+
+    *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
+        Push changes to gerrit. Without `-b` its pushed to gerrit. With option
+        `-b` its pushed to a build server. Without branchname the current
+        branch is pushed.
+
+    *   [ ] `ggr topic rename OLDTOPIC TOPIC`  
+        Rename OLDTOPIC to TOPIC
+        *   [ ] make OLDTOPIC optional, the current topic is renamed
 
     *   reviewer per commit
     *   reviewer per repository
