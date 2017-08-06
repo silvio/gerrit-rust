@@ -76,16 +76,6 @@ Some design considerations here.
 
 *   manage of topics over more than one repository (git submodules like)
 
-    *   [x] **0.1.0** `ggr topic create <BRANCHNAME> [-r sub:rev]`  
-        Create branch at main folder and specified subfolders. If a branch with
-        same name exists it isn't touched. `rev` is the reference where branch
-        should created Defaults to `orign/master`. For base folder use `-r .`.
-
-        *   [ ] execute in subfolders: create branch in this repo and in
-                baserepo.
-        *   [ ] Add `-R` option to create branch on base and all
-                subrepositories.
-
     *   [x] **0.1.0** `ggr topic forget <BRANCHNAME> [-R]`  
         Delete a branch at mainfolder and and with `-R` in all subfolders.
 
@@ -275,6 +265,20 @@ Some design considerations here.
         *   [ ] groups endpoint
         *   [ ] plugins endpoint
         *   [ ] projects endpoint
+
+
+*   Removed functionality
+
+    *   [x] `ggr topic create <BRANCHNAME> [-r sub:rev]`  
+        Removed since **0.1.22**, use instead `git submodule foreach 'git
+        branch <topicname>; true'`  
+
+        Old functionality:
+
+        Create branch at main folder and specified subfolders. If a branch with
+        same name exists it isn't touched. `rev` is the reference where branch
+        should created Defaults to `orign/master`. For base folder use `-r .`.
+
 
 *   Other Ideas
 
