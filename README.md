@@ -26,53 +26,7 @@ Some design considerations here.
 *   remove external depency to host
     *   [ ] git binary
     *   [ ] gerrit with download plugin
-*   [x] **0.1.5** Use of curl-rs as http client
-*   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
-    *   `api`: base url with schema (http)
-    *   [x] **0.1.3** User authentication (**deprecated since 0.1.9**)
-        *   `username`: username for login
-        *   `password`: password for login
-        [x] **0.1.9** only `.netrc` settings are respected for username and
-            password. u/p in config file are ignored
-    *   `root`: true if this is the uppermost project of all repositories
-        underneath
-    *   [x] Authentication (e.g.: digest, basic)
-        *   [x] `digest` and `basic` are supported. Current implementation
-            calls both. First one is `basic` and second one is `digest`.
-
-    *   Consider to configure via config file or put all settings into
-        as entries in `.git/config`.  
-        The values are same for config file and git-config approach. For the
-        git-config we use `ggr-` as a prefix.
-
-    *   provide a configuration frontend
-
-        *   [ ] `ggr config set baseurl 'http://localhost'`: set new `baseurl`
-        *   [ ] `ggr config unset -C project1 root`: remove `root` in project1
-            repository
-        *   [ ] `ggr config set root`: set root for current repository
-        *   [x] **0.1.0** `ggr config list`: list all options
-            *   [ ] ... with origin of setting
-        *   [ ] `ggr config generate --base <...> ...`: generates
-            a `.ggr.config` file
-
-    *   [x] **0.1.9** Use `$HOME/.netrc` file to get username and password.
-*   [ ] add a `--dry-run` option to print what we want to do, but we don't do
-        it
-    *   [ ] changes fetch
-    *   [ ] gerritapi changes abandonchange
-    *   [ ] gerritapi changes create
-    *   [ ] topic fetch
-    *   [ ] topic abandon
-    *   [ ] topic checkout
-    *   [ ] topic create
-    *   [ ] topic fetch
-    *   [ ] topic forget
-    *   [x] **0.1.21** topic history
-    *   [ ] topic restore
-    *   [ ] topic reviewer
-    *   [ ] topic verify
 
 *   manage of topics over more than one repository (git submodules like)
 
@@ -172,6 +126,57 @@ Some design considerations here.
 
         *   `ggr changes query status:open is:watched n:2`: query open changes
         which `watched` flag.
+
+
+*   [x] **0.1.5** Use of curl-rs as http client
+*   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
+
+    *   `api`: base url with schema (http)
+    *   [x] **0.1.3** User authentication (**deprecated since 0.1.9**)
+        *   `username`: username for login
+        *   `password`: password for login
+        [x] **0.1.9** only `.netrc` settings are respected for username and
+            password. u/p in config file are ignored
+    *   `root`: true if this is the uppermost project of all repositories
+        underneath
+    *   [x] Authentication (e.g.: digest, basic)
+        *   [x] `digest` and `basic` are supported. Current implementation
+            calls both. First one is `basic` and second one is `digest`.
+
+    *   Consider to configure via config file or put all settings into
+        as entries in `.git/config`.  
+        The values are same for config file and git-config approach. For the
+        git-config we use `ggr-` as a prefix.
+
+    *   provide a configuration frontend
+
+        *   [ ] `ggr config set baseurl 'http://localhost'`: set new `baseurl`
+        *   [ ] `ggr config unset -C project1 root`: remove `root` in project1
+            repository
+        *   [ ] `ggr config set root`: set root for current repository
+        *   [x] **0.1.0** `ggr config list`: list all options
+            *   [ ] ... with origin of setting
+        *   [ ] `ggr config generate --base <...> ...`: generates
+            a `.ggr.config` file
+
+    *   [x] **0.1.9** Use `$HOME/.netrc` file to get username and password.
+
+
+*   [ ] add a `--dry-run` option to print what we want to do, but we don't do
+        it
+    *   [ ] changes fetch
+    *   [ ] gerritapi changes abandonchange
+    *   [ ] gerritapi changes create
+    *   [ ] topic fetch
+    *   [ ] topic abandon
+    *   [ ] topic checkout
+    *   [ ] topic create
+    *   [ ] topic fetch
+    *   [ ] topic forget
+    *   [x] **0.1.21** topic history
+    *   [ ] topic restore
+    *   [ ] topic reviewer
+    *   [ ] topic verify
 
 * Library features
 
