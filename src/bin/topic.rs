@@ -27,27 +27,6 @@ use config;
 pub fn menu<'a, 'b>() -> App<'a, 'b> {
     SubCommand::with_name("topic")
     .about("topic management")
-    .subcommand(SubCommand::with_name("create")
-                .about("Create topic branch")
-                .arg(Arg::with_name("branchname")
-                     .help("branch name to create")
-                     .required(true)
-                     .index(1)
-                )
-                .arg(Arg::with_name("repo")
-                     .short("r")
-                     .long("repo")
-                     .help("Create topic branch on this repository. \
-                            Use <repo>[:<git-reference>] to point to a specific repository. \
-                            Current repository is '.' \
-                            '<git-reference>' defaults to HEAD. \
-                            Example: -r .:origin/master -r test -r project:4d6d711")
-                     .next_line_help(true)
-                     .required(true)
-                     .multiple(true)
-                     .takes_value(true)
-                )
-    )
     .subcommand(SubCommand::with_name("forget")
                 .about("Delete topic branch")
                 .arg(Arg::with_name("branchname")
@@ -100,6 +79,8 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                     .required(true)
                     .index(1)
                )
+               .after_help("* the tags are added in format ggr/<topicname>/<changeid>/<version> \n\
+                            * remove all tags of a topic via `git submodule foreach 'git tag -l 'ggr/<topicname>' | xargs git tag -d`")
     )
     .subcommand(SubCommand::with_name("checkout")
                 .about("Checkout a branch on current and all sub repositories")
@@ -200,7 +181,6 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
 /// * pull
 pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     match x.subcommand() {
-        ("create", Some(y)) => { create(y) },
         ("forget", Some(y)) => { forget(y) },
         ("fetch", Some(y)) => { fetch(y, config) },
         ("history", Some(y)) => { history(y, config) },
@@ -216,48 +196,6 @@ pub fn manage(x: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     }
 }
 
-/// Create topics
-fn create(y: &clap::ArgMatches) -> GGRResult<()> {
-    let branchname = match y.value_of("branchname") {
-        Some(x) => x,
-        None => return Err(GGRError::General("Bad branchname".into())),
-    };
-
-    let repository_names = match y.values_of_lossy("repo") {
-        Some(x) => x,
-        None => return Err(GGRError::General("Bad Reponame".into())),
-    };
-
-    let mut repo;
-    if repository_names.is_empty() {
-        println!("Create topic branch \"{}\" at repository:", branchname);
-        for subrep in repository_names {
-            let (repo_name, reference_name) = split_repo_reference(&subrep);
-
-            print!("* {}: ", &repo_name);
-            repo = try!(git2::Repository::open(&repo_name));
-            match repo.revparse_single(&reference_name) {
-                Ok(object) => {
-                    let commit = match object.as_commit() {
-                        Some(c) => c,
-                        None => { println!("fail (not exists)"); continue},
-                    };
-
-                    match repo.branch(branchname, commit, false) {
-                        Ok(_) => { println!("done") },
-                        Err(e) => { println!("fail ({})", e.message()); },
-                    };
-                },
-                Err(e) => {
-                    println!("fail ({})", e.message())
-                },
-            }
-        }
-    }
-
-    Ok(())
-}
-
 /// delete topics
 fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
     let branchname = match y.value_of("branchname") {
@@ -265,76 +203,38 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
         None => return Err(GGRError::General("Bad branchname".into())),
     };
 
-    let repo = try!(git2::Repository::discover("."));
+    let repo = git2::Repository::discover(".")?;
+    let recursive = y.is_present("recursive");
 
     /* remove branch on the current repository */
-    match repo.find_branch(branchname, git2::BranchType::Local) {
-        Ok(mut branch) => {
-            print!("* current folder: ");
-            if branch.delete().is_err() {
-                println!("fail");
-            } else {
-                println!("done");
-            }
-        },
-        Err(err) => {
-            return Err(GGRError::from(err));
-        }
-    };
+    print!("* delete {} in {:?}: ", branchname, repo.path());
+    match forget_branch(&repo, branchname) {
+        Ok(_) => { println!("OK"); },
+        Err(x) => { println!("FAILED, ({})", x); }
+    }
 
     /* remove branch on all submodules */
-    if y.is_present("recursive") {
-        let submodules = try!(repo.submodules());
+    if recursive {
+        let submodules = repo.submodules()?;
+
         for sm in &submodules {
-            let reposub = try!(sm.open());
-            match reposub.find_branch(branchname, git2::BranchType::Local) {
-                Ok(mut branch) => {
-                    print!("* {}: ", sm.path().display());
-                    if branch.delete().is_err() {
-                        println!("fail");
-                    } else {
-                        println!("done");
-                    }
-                },
-                Err(err) => {
-                    return Err(GGRError::from(err));
-                }
-            };
+            let reposub = sm.open()?;
+
+            print!("* delete {} in {}: ", branchname, reposub.path().file_name().unwrap().to_string_lossy());
+            match forget_branch(&reposub, branchname) {
+                Ok(_) => { println!("OK"); },
+                Err(x) => { println!("FAILED, ({})", x); }
+            }
         }
     }
     Ok(())
 }
 
-/// splits a string to repository and reference
-///
-/// 't' can have this possible cases and output:
-///
-/// * 'a':      (repo=a, reference=HEAD)
-/// * 'a:b'     (repo=a, reference=b)
-/// * 'a:b:c'   (repo=a, reference=b)
-fn split_repo_reference(t: &str) -> (String, String) {
-    let repo;
-    let reference;
-
-    let mut splited = t.split(':');
-
-    if splited.clone().count() >= 2 {
-        // unwrap are save in this context
-        repo = String::from(splited.next().unwrap());
-        reference = String::from(splited.next().unwrap());
-    } else {
-        reference = String::from("HEAD");
-        repo = t.to_owned().to_string();
-    }
-
-    (repo, reference)
-}
-
-#[test]
-fn test_split_repo_reference() {
-    assert_eq!(split_repo_reference("a"), ("a".to_string(),"HEAD".to_string()));
-    assert_eq!(split_repo_reference("a:b"), ("a".to_string(),"b".to_string()));
-    assert_eq!(split_repo_reference("a:b:c"), ("a".to_string(),"b".to_string()));
+fn forget_branch(repo: &git2::Repository, branchname: &str) -> GGRResult<()>
+{
+    repo.find_branch(branchname, git2::BranchType::Local)?
+        .delete()
+        .map_err(|x| { GGRError::from(x) })
 }
 
 pub enum OwnedOrRef<'a, T: 'a>
@@ -421,7 +321,7 @@ fn history(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
                 for (fetchtype, fetchinfo) in &revisioninfo.fetch {
                     if fetchtype.starts_with("http") {
-                        match history_fetch_from_repo(fetchinfo, &topicname, dryrun) {
+                        match do_fetch_from_repo(fetchinfo, &topicname, TagOrBranch::Tag, None, false, dryrun) {
                             Err(x) => {
                                 outstr.push_str(&format!("FAILED: {}", x));
                             },
@@ -441,35 +341,38 @@ fn history(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     Ok(())
 }
 
-/// transform of fetchurl to a tag-name
-///
-/// # Examples
-///
-/// ```rust
-/// assert_eq!(Ok("ggr/topic/85/225285/1"), history_build_tag_from_fetchinfo("refs/changes/85/225285/1"));
-/// ```
-fn history_build_tag_from_fetchinfo(fetchurl: &str) -> GGRResult<&str>
-{
-    if !fetchurl.starts_with("refs/changes/") {
-        return Err(GGRError::General(format!("fetchurl needs to starts with 'refs/changes/' ({})", fetchurl)));
-    }
-
-    // remove 'ref/changes/' and the two digits after this part plus a slash
-    Ok(&fetchurl.trim_left_matches("refs/changes/")[3..])
+#[derive(Debug, PartialEq)]
+enum TagOrBranch {
+    Tag,
+    Branch,
 }
 
-// TODO: new implementation of fetch_from_repo
-fn history_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, dryrun: bool) -> GGRResult<String>
+
+/// fetch via fetchinfo entity a tag or branch, and for branches it can set tracking information.
+fn do_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, tag_or_branch: TagOrBranch, tracking_branch_name: Option<&str>, force: bool, dryrun: bool) -> GGRResult<String>
 {
     debug!("history fetch {:?}", fetchinfo);
 
     let main_repo = git2::Repository::open(".")?;
     let repo = history_find_repo_for_fetchinfo_url(&main_repo, &fetchinfo.url)?;
+    let forcemark = if force { "+" } else { "" };
+
+    let (refspecs, name) = match tag_or_branch {
+        TagOrBranch::Tag => {
+            (
+                format!("{}:refs/tags/ggr/{}/{}", fetchinfo.reference, topic, fetchinfo.get_reference_string()),
+                format!("ggr/{}/{}", topic, fetchinfo.get_reference_string())
+            )
+        },
+        TagOrBranch::Branch => {
+            (
+                format!("{}{}:{}", forcemark, fetchinfo.reference, topic),
+                String::from(topic)
+            )
+        },
+    };
 
     /* we have found the rpeository. we can now fetch and tag the revision. */
-    let tag = format!("ggr/{}/{}", topic, history_build_tag_from_fetchinfo(&fetchinfo.reference)?);
-    // TODO: add topicname in ggr/-part
-    let refspecs = format!("{}:refs/tags/{}", fetchinfo.reference, tag);
     let mut cb = git2::RemoteCallbacks::new();
     cb.credentials(|url, username, allowed| {
         debug!("credential callback: {} / {:?} / {:?}", url, username, allowed);
@@ -506,6 +409,7 @@ fn history_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, dryrun:
 
         Err(git2::Error::from_str(&format!("no correct netrc entry for repository {} found.", url)))
     });
+
     let mut fetchoptions = git2::FetchOptions::new();
     fetchoptions.prune(git2::FetchPrune::Off)
         .update_fetchhead(false)
@@ -519,14 +423,19 @@ fn history_fetch_from_repo(fetchinfo: &entities::FetchInfo, topic: &str, dryrun:
     if !dryrun {
         match repo.find_remote("origin")?.fetch(&[&refspecs], Some(&mut fetchoptions), Some("")) {
             Ok(_) => {
-                Ok(format!("OK, pulled '{}' as tag '{}' into {}", fetchinfo.reference, tag, workdir.to_string_lossy()))
+                if tag_or_branch == TagOrBranch::Branch {
+                    if let Ok(mut branch) = repo.find_branch(&name, git2::BranchType::Local) {
+                        let _ = branch.set_upstream(tracking_branch_name);
+                    };
+                };
+                Ok(format!("OK, pulled '{}' as {:?} '{}' into {}", fetchinfo.reference, tag_or_branch, name, workdir.to_string_lossy()))
             },
             Err(x) => {
                 Err(GGRError::General(format!("FAILED! Could not pull {} at {} ({})", refspecs, fetchinfo.url, x.message())))
             },
         }
     } else {
-        Ok(format!("OK, (dry-run) pulled '{}' as tag '{}' into {}", fetchinfo.reference, tag, workdir.to_string_lossy()))
+        Ok(format!("OK, (dry-run) pulled '{}' as {:?} '{}' into {}", fetchinfo.reference, tag_or_branch, name, workdir.to_string_lossy()))
     }
 }
 
@@ -923,19 +832,12 @@ fn fetch_topic(gerrit: &mut Gerrit, topicname: &str, local_branch_name: &str, fo
         query_part.push("status:open".into());
     }
 
-    match changes.query_changes(Some(query_part), Some(vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into()))) {
-        Ok(changeinfos) => {
-            if changeinfos.is_empty() {
-                println!("topic '{}' not found", topicname);
-                return Ok(());
-            }
-            fetch_changeinfos(&changeinfos, force, local_branch_name, tracking_branch_name)
-        },
-        Err(x) => {
-            println!("topic '{}' problem found: {}", topicname, x);
-            Err(x)
-        },
+    let changeinfos = changes.query_changes(Some(query_part), Some(vec!("CURRENT_REVISION".into(), "CURRENT_COMMIT".into())))?;
+    if changeinfos.is_empty() {
+        println!("topic '{}' not found", topicname);
+        return Ok(());
     }
+    fetch_changeinfos(&changeinfos, force, local_branch_name, tracking_branch_name)
 }
 
 /// Convenient function to pull one or more `changeids`
@@ -951,8 +853,8 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
         if let Ok(main_repo) = git2::Repository::open(".") {
             // check changes on root repository
             match fetch_from_repo(&main_repo, changeinfos, force, local_branch_name, &p_name, &p_tip, tracking_branch_name) {
-                Ok((true,_)) => {
-                    println!("OK");
+                Ok((true, x)) => {
+                    println!("OK ({})", x);
                     continue;
                 },
                 Ok((false, m)) => {
@@ -999,13 +901,15 @@ pub fn fetch_changeinfos(changeinfos: &[entities::ChangeInfo], force: bool, loca
     Ok(())
 }
 
-/// convenient function to pull a `p_tip` from a `repo`, if `basename(repo.url)` same as `p_name`
-/// is.
+/// convenient function to pull a `project_tip` from a `repo`, if `basename(repo.url)` same as
+/// `project_name` is.
+///
+/// The `project_tip` is the head of a topic within a repository
 ///
 /// returns `true` if something is pulled, and `false` if no pull was executed. The String object
 /// is a status message.
-fn fetch_from_repo(repo: &git2::Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, p_name: &str, p_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
-    trace!("repo-path:{:?}, p_name:{}, p_tip:{}", repo.path().file_name(), p_name, p_tip);
+fn fetch_from_repo(repo: &git2::Repository, ci: &[entities::ChangeInfo], force: bool, local_branch_name: &str, project_name: &str, project_tip: &str, tracking_branch_name: Option<&str>) -> GGRResult<(bool, String)> {
+    trace!("repo-path:{:?}, project_name:{}, project_tip:{}", repo.path().file_name(), project_name, project_tip);
     if repo.is_bare() {
         return Err(GGRError::General(format!("repository path '{:?}' is bare, we need a workdir", repo.path())));
     }
@@ -1014,76 +918,34 @@ fn fetch_from_repo(repo: &git2::Repository, ci: &[entities::ChangeInfo], force: 
         if let Ok(remote) = repo.find_remote(remote_name.unwrap()) {
             let url = remote.url().unwrap().to_owned();
             let check_project_names = vec!(
-                p_name.into(),
-                format!("{}.git", p_name)
+                project_name.into(),
+                format!("{}.git", project_name)
             );
 
-
-
             if check_project_names.contains(&String::from(url_to_projectname(&url).unwrap())) {
-                let entity = entity_from_commit(ci, p_tip)?;
-
-                /* TODO: rewrite */
-                let reference =
-                    if let Some(ref cur_rev) = entity.current_revision {
-                        if let Some(ref revisions) = entity.revisions {
-                            if let Some(current_revision) = revisions.get(cur_rev) {
-                                if let Some(fetchref) = current_revision.fetch.get("http") {
-                                    &fetchref.reference
-                                } else {
-                                    return Err(GGRError::General("No fetch ref".into()));
-                                }
-                            } else {
-                                return Err(GGRError::General("no current revisions".into()));
-                            }
-                        } else {
-                            return Err(GGRError::General("No revisions".into()));
-                        }
-                    } else {
-                        return Err(GGRError::General("No cur_rev".into()));
+                for entity in ci {
+                    let current_revision = match entity.current_revision {
+                        None => { continue },
+                        Some(ref x) => x,
                     };
 
+                    if project_tip != current_revision { continue };
 
-                let force_string = if force {"+"} else { "" };
-                let refspec = format!("{}{}:{}", force_string, reference, local_branch_name);
+                    let cirevisions = entity.clone().revisions.unwrap();
+                    for (ref revision, ref revisioninfo) in cirevisions {
+                        if revision != current_revision { continue };
 
-                debug!("refspec: {}", refspec);
-
-                if !force  && repo.find_branch(local_branch_name, git2::BranchType::Local).is_ok() {
-                    // Branch exists, but no force
-                    return Ok((false, String::from("Branch exists and no force")));
-                }
-
-                let mut output_fetch = try!(Command::new("git")
-                    .current_dir(repo.path())
-                    .arg("fetch")
-                    .arg(remote.name().unwrap())
-                    .arg(refspec)
-                    .arg(if force { "--force" } else { "" })
-                    .output());
-
-                if output_fetch.status.success() {
-                    if let Some(tracking_branch) = tracking_branch_name {
-                        let mut output_tracking = try!(Command::new("git")
-                             .current_dir(repo.path())
-                             .arg("branch")
-                             .arg("--set-upstream-to")
-                             .arg(tracking_branch)
-                             .arg(local_branch_name)
-                             .output());
-                        if !output_tracking.stdout.is_empty() {
-                            output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
-                            output_fetch.stdout.append(&mut output_tracking.stdout);
-                        }
-                        if !output_tracking.stderr.is_empty() {
-                            output_fetch.stdout.append(&mut String::from("\n* ").into_bytes());
-                            output_fetch.stdout.append(&mut output_tracking.stderr);
+                        for (fetchtype, fetchinfo) in &revisioninfo.fetch {
+                            if fetchtype.starts_with("http") {
+                                match do_fetch_from_repo(fetchinfo, local_branch_name, TagOrBranch::Branch, tracking_branch_name, force, false) {
+                                    Err(x) => return Err(x),
+                                    Ok(x) => {
+                                        return Ok((true, x))
+                                    },
+                                }
+                            }
                         }
                     }
-
-                    return Ok((true, try!(String::from_utf8(output_fetch.stdout))));
-                } else {
-                    return Err(GGRError::General(try!(String::from_utf8(output_fetch.stderr))));
                 }
             }
         }

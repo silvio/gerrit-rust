@@ -26,65 +26,9 @@ Some design considerations here.
 *   remove external depency to host
     *   [ ] git binary
     *   [ ] gerrit with download plugin
-*   [x] **0.1.5** Use of curl-rs as http client
-*   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
 
-    *   `api`: base url with schema (http)
-    *   [x] **0.1.3** User authentication (**deprecated since 0.1.9**)
-        *   `username`: username for login
-        *   `password`: password for login
-        [x] **0.1.9** only `.netrc` settings are respected for username and
-            password. u/p in config file are ignored
-    *   `root`: true if this is the uppermost project of all repositories
-        underneath
-    *   [x] Authentication (e.g.: digest, basic)
-        *   [x] `digest` and `basic` are supported. Current implementation
-            calls both. First one is `basic` and second one is `digest`.
-
-    *   Consider to configure via config file or put all settings into
-        as entries in `.git/config`.  
-        The values are same for config file and git-config approach. For the
-        git-config we use `ggr-` as a prefix.
-
-    *   provide a configuration frontend
-
-        *   [ ] `ggr config set baseurl 'http://localhost'`: set new `baseurl`
-        *   [ ] `ggr config unset -C project1 root`: remove `root` in project1
-            repository
-        *   [ ] `ggr config set root`: set root for current repository
-        *   [x] **0.1.0** `ggr config list`: list all options
-            *   [ ] ... with origin of setting
-        *   [ ] `ggr config generate --base <...> ...`: generates
-            a `.ggr.config` file
-
-    *   [x] **0.1.9** Use `$HOME/.netrc` file to get username and password.
-*   [ ] add a `--dry-run` option to print what we want to do, but we don't do
-        it
-    *   [ ] changes fetch
-    *   [ ] gerritapi changes abandonchange
-    *   [ ] gerritapi changes create
-    *   [ ] topic fetch
-    *   [ ] topic abandon
-    *   [ ] topic checkout
-    *   [ ] topic create
-    *   [ ] topic fetch
-    *   [ ] topic forget
-    *   [x] **0.1.21** topic history
-    *   [ ] topic restore
-    *   [ ] topic reviewer
-    *   [ ] topic verify
 
 *   manage of topics over more than one repository (git submodules like)
-
-    *   [x] **0.1.0** `ggr topic create <BRANCHNAME> [-r sub:rev]`  
-        Create branch at main folder and specified subfolders. If a branch with
-        same name exists it isn't touched. `rev` is the reference where branch
-        should created Defaults to `orign/master`. For base folder use `-r .`.
-
-        *   [ ] execute in subfolders: create branch in this repo and in
-                baserepo.
-        *   [ ] Add `-R` option to create branch on base and all
-                subrepositories.
 
     *   [x] **0.1.0** `ggr topic forget <BRANCHNAME> [-R]`  
         Delete a branch at mainfolder and and with `-R` in all subfolders.
@@ -93,19 +37,10 @@ Some design considerations here.
             recursive which have no commit and the repositories are clean. Warn
             unclean repositories/branches.
 
-    *   [ ] `ggr topic list -s`  
-        List all development branches and the repositories. With `-s` it
-        includes the commits in the branch like `git submodule summary`.
-
     *   [x] **0.1.8** `ggr topic checkout <BRANCHNAME>`  
         Checkout a branch on all repositories.
         *   [x] **0.1.8** first check base folder if checkout happened sync all
             submodules than checkout changes for topic on subfolders
-
-    *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
-        Push changes to gerrit. Without `-b` its pushed to gerrit. With option
-        `-b` its pushed to a build server. Without branchname the current
-        branch is pushed.
 
     *   [x] **0.1.7** <s>`ggr topic pull ...`</s>  
         same as `ggr topic fetch`. This sub function is renamed because `fetch`
@@ -143,10 +78,6 @@ Some design considerations here.
             about this abandon action or don't notify (via `NONE`). Default is
             `ALL`.
 
-    *   [ ] `ggr topic rename OLDTOPIC TOPIC`  
-        Rename OLDTOPIC to TOPIC
-        *   [ ] make OLDTOPIC optional, the current topic is renamed
-
     *   [x] **0.1.19** `ggr topic verify [<TOPICNAME>] [-c <code-review>] [-l "<revie-label>"] [-m <MESSAGE>]`  
         Gerrits labels are configurable on server side. Via `-l` option the
         label can be accessed. (e.g. `-l "Code-Review:2"`). Option `-c <VALUE>`
@@ -182,6 +113,57 @@ Some design considerations here.
 
         *   `ggr changes query status:open is:watched n:2`: query open changes
         which `watched` flag.
+
+
+*   [x] **0.1.5** Use of curl-rs as http client
+*   [x] **0.1.0** Use a config file `.ggr.config` in TOML format
+
+    *   `api`: base url with schema (http)
+    *   [x] **0.1.3** User authentication (**deprecated since 0.1.9**)
+        *   `username`: username for login
+        *   `password`: password for login
+        [x] **0.1.9** only `.netrc` settings are respected for username and
+            password. u/p in config file are ignored
+    *   `root`: true if this is the uppermost project of all repositories
+        underneath
+    *   [x] Authentication (e.g.: digest, basic)
+        *   [x] `digest` and `basic` are supported. Current implementation
+            calls both. First one is `basic` and second one is `digest`.
+
+    *   Consider to configure via config file or put all settings into
+        as entries in `.git/config`.  
+        The values are same for config file and git-config approach. For the
+        git-config we use `ggr-` as a prefix.
+
+    *   provide a configuration frontend
+
+        *   [ ] `ggr config set baseurl 'http://localhost'`: set new `baseurl`
+        *   [ ] `ggr config unset -C project1 root`: remove `root` in project1
+            repository
+        *   [ ] `ggr config set root`: set root for current repository
+        *   [x] **0.1.0** `ggr config list`: list all options
+            *   [ ] ... with origin of setting
+        *   [ ] `ggr config generate --base <...> ...`: generates
+            a `.ggr.config` file
+
+    *   [x] **0.1.9** Use `$HOME/.netrc` file to get username and password.
+
+
+*   [ ] add a `--dry-run` option to print what we want to do, but we don't do
+        it
+    *   [ ] changes fetch
+    *   [ ] gerritapi changes abandonchange
+    *   [ ] gerritapi changes create
+    *   [ ] topic fetch
+    *   [ ] topic abandon
+    *   [ ] topic checkout
+    *   [ ] topic create
+    *   [ ] topic fetch
+    *   [ ] topic forget
+    *   [x] **0.1.21** topic history
+    *   [ ] topic restore
+    *   [ ] topic reviewer
+    *   [ ] topic verify
 
 * Library features
 
@@ -276,6 +258,20 @@ Some design considerations here.
         *   [ ] plugins endpoint
         *   [ ] projects endpoint
 
+
+*   Removed functionality
+
+    *   [x] `ggr topic create <BRANCHNAME> [-r sub:rev]`  
+        Removed since **0.1.22**, use instead `git submodule foreach 'git
+        branch <topicname>; true'`  
+
+        Old functionality:
+
+        Create branch at main folder and specified subfolders. If a branch with
+        same name exists it isn't touched. `rev` is the reference where branch
+        should created Defaults to `orign/master`. For base folder use `-r .`.
+
+
 *   Other Ideas
 
     *   [x] **0.1.9** implement a log mechanism to get debugging information
@@ -307,6 +303,19 @@ Some design considerations here.
         *   `ggr stat -F 2015-12-31 -T 2016-02-01`: from 01.01.2016T00:00 till 01.02.2016T23:59:59
         *   `ggr stat -F 2016-01-01`: from 02.01.2016T00:00 till now
         *   `ggr stat -T 2016-02-01`: from begin of gerrit usage till 01.02.2016T23:59:59
+
+    *   [ ] `ggr topic list -s`  
+        List all development branches and the repositories. With `-s` it
+        includes the commits in the branch like `git submodule summary`.
+
+    *   [ ] `ggr topic push [-b] [<BRANCHNAME>]`  
+        Push changes to gerrit. Without `-b` its pushed to gerrit. With option
+        `-b` its pushed to a build server. Without branchname the current
+        branch is pushed.
+
+    *   [ ] `ggr topic rename OLDTOPIC TOPIC`  
+        Rename OLDTOPIC to TOPIC
+        *   [ ] make OLDTOPIC optional, the current topic is renamed
 
     *   reviewer per commit
     *   reviewer per repository
