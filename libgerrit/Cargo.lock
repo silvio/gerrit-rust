@@ -1,6 +1,6 @@
 [root]
 name = "libgerrit"
-version = "0.2.5"
+version = "0.2.6"
 dependencies = [
  "curl 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "git2 0.6.6 (registry+https://github.com/rust-lang/crates.io-index)",
