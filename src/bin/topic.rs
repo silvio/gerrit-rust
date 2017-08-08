@@ -79,6 +79,8 @@ pub fn menu<'a, 'b>() -> App<'a, 'b> {
                     .required(true)
                     .index(1)
                )
+               .after_help("* the tags are added in format ggr/<topicname>/<changeid>/<version> \n\
+                            * remove all tags of a topic via `git submodule foreach 'git tag -l 'ggr/<topicname>' | xargs git tag -d`")
     )
     .subcommand(SubCommand::with_name("checkout")
                 .about("Checkout a branch on current and all sub repositories")
