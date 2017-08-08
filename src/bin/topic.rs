@@ -268,36 +268,27 @@ fn forget(y: &clap::ArgMatches) -> GGRResult<()> {
     let repo = try!(git2::Repository::discover("."));
 
     /* remove branch on the current repository */
-    match repo.find_branch(branchname, git2::BranchType::Local) {
-        Ok(mut branch) => {
-            print!("* current folder: ");
-            if branch.delete().is_err() {
-                println!("fail");
-            } else {
-                println!("done");
-            }
-        },
-        Err(err) => {
-            return Err(GGRError::from(err));
+    if let Ok(mut branch) = repo.find_branch(branchname, git2::BranchType::Local) {
+        print!("* current folder: ");
+        if branch.delete().is_err() {
+            println!("fail");
+        } else {
+            println!("done");
         }
     };
 
     /* remove branch on all submodules */
     if y.is_present("recursive") {
         let submodules = try!(repo.submodules());
+
         for sm in &submodules {
             let reposub = try!(sm.open());
-            match reposub.find_branch(branchname, git2::BranchType::Local) {
-                Ok(mut branch) => {
-                    print!("* {}: ", sm.path().display());
-                    if branch.delete().is_err() {
-                        println!("fail");
-                    } else {
-                        println!("done");
-                    }
-                },
-                Err(err) => {
-                    return Err(GGRError::from(err));
+            if let Ok(mut branch) = reposub.find_branch(branchname, git2::BranchType::Local) {
+                print!("* {}: ", sm.path().display());
+                if branch.delete().is_err() {
+                    println!("fail");
+                } else {
+                    println!("done");
                 }
             };
         }
