@@ -525,80 +525,88 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
     let mut gerrit = Gerrit::new(config.get_base_url());
     if let Ok(cis) = gerrit.changes().query_changes(Some(vec!(&format!("topic:{}", topicname)[..])), None) {
 
+        let mut children = Vec::new();
+
         // manipulate reviewer for topic
         if let Some(ref reviewerlist) = y.values_of_lossy("reviewers") {
             for ci in cis {
-                for reviewer in reviewerlist {
-                    let remove = reviewer.starts_with('~');
+                let reviewerlist = reviewerlist.clone();
+                let mut gerrit = gerrit.clone();
+                children.push(thread::spawn(move || {
+                    for reviewer in reviewerlist {
+                        let remove = reviewer.starts_with('~');
 
-                    if remove {
-                        let reviewer = &reviewer[1..];
-                        if let Err(res) = gerrit.changes().delete_reviewer(&ci.change_id, reviewer) {
-                            /*
-                             * delete_changes returnes a empty body and a status code. A empty body
-                             * cannot deserialized its break with a error message
-                             * "JsonError(ErrorImpl { code: EofWhileParsingValue, line: 1, column: 0 })"
-                             *
-                             * Now we destructure the objects and check for status code 204 (no
-                             * content) and overwrite this to be okay.
-                             */
-                            match res {
-                                GGRError::GerritApiError(ref x) => {
-                                    match *x {
-                                        GerritError::GerritApi(ref status, ref text) => {
-                                            if *status >= 400 {
-                                                println!("{}, ({}: {})", reviewer, status, text);
-                                            } else {
-                                                println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
-                                            }
-                                        },
-                                        ref err => {
-                                            println!("Other error: {:?}", err);
-                                        },
-                                    }
-                                },
-                                x => { println!("Other error: {:?}", x);}
-                            };
-
-                        } else {
-                            println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
-                        };
-                    } else {
-                        match gerrit.changes().add_reviewer(&ci.change_id, reviewer) {
-                            Ok(addreviewerresult) => {
-
-                                match addreviewerresult.reviewers {
-                                    Some(reviewerret) => {
-                                        for r in reviewerret {
-                                            println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
-                                                     ci.change_id,
-                                                     ci.subject,
-                                                     r.name.unwrap_or_else(|| "unkown name".into()),
-                                                     r.email.unwrap_or_else(|| "unkown mail".into()),
-                                                     r._account_id.unwrap_or(99999999));
+                        if remove {
+                            let reviewer = &reviewer[1..];
+                            if let Err(res) = gerrit.changes().delete_reviewer(&ci.change_id, reviewer) {
+                                /*
+                                 * delete_changes returnes a empty body and a status code. A empty body
+                                 * cannot deserialized its break with a error message
+                                 * "JsonError(ErrorImpl { code: EofWhileParsingValue, line: 1, column: 0 })"
+                                 *
+                                 * Now we destructure the objects and check for status code 204 (no
+                                 * content) and overwrite this to be okay.
+                                 */
+                                match res {
+                                    GGRError::GerritApiError(ref x) => {
+                                        match *x {
+                                            GerritError::GerritApi(ref status, ref text) => {
+                                                if *status >= 400 {
+                                                    println!("{}, ({}: {})", reviewer, status, text);
+                                                } else {
+                                                    println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
+                                                }
+                                            },
+                                            ref err => {
+                                                println!("Other error: {:?}", err);
+                                            },
                                         }
                                     },
-                                    None => {
-                                        println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
-                                                 ci.change_id,
-                                                 ci.subject,
-                                                 reviewer,
-                                                 addreviewerresult.error.unwrap_or_else(|| "No error message from gerrit server provided".into()));
-                                    },
+                                    x => { println!("Other error: {:?}", x);}
                                 };
-                            },
-                            Err(e) => {
-                                println!("Problem to add '{}' as reviewer: {}", reviewer, e);
-                            },
+
+                            } else {
+                                println!("* {:5.5} [{:20.20}] reviewer '{}' removed", ci.change_id, ci.subject, reviewer);
+                            };
+                        } else {
+                            match gerrit.changes().add_reviewer(&ci.change_id, &reviewer) {
+                                Ok(addreviewerresult) => {
+
+                                    match addreviewerresult.reviewers {
+                                        Some(reviewerret) => {
+                                            for r in reviewerret {
+                                                println!("* {:5.5} [{:20.20}] reviewer {}, {}, {}: added",
+                                                         ci.change_id,
+                                                         ci.subject,
+                                                         r.name.unwrap_or_else(|| "unkown name".into()),
+                                                         r.email.unwrap_or_else(|| "unkown mail".into()),
+                                                         r._account_id.unwrap_or(99999999));
+                                            }
+                                        },
+                                        None => {
+                                            println!("* {:5.5} [{:20.20}] reviewer '{}' not added: {}",
+                                                     ci.change_id,
+                                                     ci.subject,
+                                                     reviewer,
+                                                     addreviewerresult.error.unwrap_or_else(|| "No error message from gerrit server provided".into()));
+                                        },
+                                    };
+                                },
+                                Err(e) => {
+                                    println!("Problem to add '{}' as reviewer: {}", reviewer, e);
+                                },
+                            }
                         }
                     }
-                }
+                }));
+            }
+
+            for child in children {
+                let _ = child.join();
             }
 
             return Ok(());
         }
-
-        let mut children = Vec::new();
 
         // only list reviewers
         debug!("threads: {}", cis.len());
