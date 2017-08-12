@@ -18,9 +18,10 @@ your knowledge.
 *   A installed `git` binary in `$PATH`
 *   gerrit server with installed download-plugin
 
-# Design
+# Manual & Ideas
 
-Some design considerations here.
+Some design considerations here. Implemented features marked with `[x]`. All
+other ideas are todos and marked with `[ ]`.
 
 *   [ ] semver at version 1.0.0. Before this version no semver!
 *   remove external depency to host

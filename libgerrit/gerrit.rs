@@ -6,6 +6,7 @@ use changes;
 use url;
 
 /// `Gerrit` structure for management of several gerrit endpoints
+#[derive(Clone)]
 pub struct Gerrit {
     url: url::Url,
 }
