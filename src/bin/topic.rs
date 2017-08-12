@@ -600,7 +600,7 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
 
         // only list reviewers
         for ci in cis {
-            println!("* reviewer for {}:", ci.subject);
+            println!("reviewer for '{}':", ci.subject);
             if let Ok(reviewers) = gerrit.changes().get_reviewers(&ci.id) {
                 let mut reviewer_list = Vec::new();
                 for reviewer in reviewers {
@@ -613,7 +613,9 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                     reviewer_list.push(name.clone());
 
                     if verbose {
-                        println!("  * {:?} {:15.15} {:15.15} {}", approval, name, username, email);
+                        for (approvei_label, approve_value) in &approval {
+                            println!("  * {:20.20} {:20.20} {:>5.5}", email, approvei_label.trim(), approve_value.trim());
+                        }
                     }
                 }
                 if ! verbose {
