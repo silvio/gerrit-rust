@@ -633,7 +633,7 @@ pub struct ReviewerInfo {
     /// The approvals of the reviewer as a map that maps the label names to the approval values
     /// ("-2", "-1", "0", "+1", "+2")
     /// V02.09
-    pub approvals: HashMap<String, i8>,
+    pub approvals: HashMap<String, String>,
 }
 
 /// The `AddReviewerResult` entity describes the result of adding a reviewer to a change.
