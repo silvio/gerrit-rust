@@ -767,19 +767,24 @@ fn verify(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
                 match changes.get_reviewers(&id) {
                     Ok(reviewerinfos) => {
                         /* a list of reviews for one changeset */
-                        let mut changeinfo_review: HashMap<String /* label */, Vec<i8> /* list of reviews */> = HashMap::new();
+                        let mut changeinfo_review: HashMap<String /* label */, Vec<String> /* list of reviews */> = HashMap::new();
 
                         for ri in reviewerinfos {
                             for (label, review) in ri.approvals {
+                                let review = String::from(review.trim());
                                 let entry = changeinfo_review.entry(label.clone()).or_insert_with(Vec::new);
-                                entry.push(review);
+                                if let Ok(review_int) = review.parse() {
+                                    entry.push(review);
 
-                                let overall = overall_review.entry(label.clone()).or_insert((0,0));
-                                if review < overall.0 {
-                                    overall.0 = review;
-                                }
-                                if review > overall.1 {
-                                    overall.1 = review;
+                                    let overall = overall_review.entry(label.clone()).or_insert((0,0));
+                                    if review_int < overall.0 {
+                                        overall.0 = review_int;
+                                    }
+                                    if review_int > overall.1 {
+                                        overall.1 = review_int;
+                                    }
+                                } else {
+                                    debug!("This review is not convertible to int: {:?}", review);
                                 }
                             };
                         };
