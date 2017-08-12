@@ -598,34 +598,44 @@ fn reviewer(y: &clap::ArgMatches, config: &config::Config) -> GGRResult<()> {
             return Ok(());
         }
 
-        // only list reviewers
-        for ci in cis {
-            println!("reviewer for '{}':", ci.subject);
-            if let Ok(reviewers) = gerrit.changes().get_reviewers(&ci.id) {
-                let mut reviewer_list = Vec::new();
-                for reviewer in reviewers {
-                    let (name, username, email, approval) = (
-                        reviewer.name.unwrap_or_else(|| "unknown".into()),
-                        reviewer.username.unwrap_or_else(|| "unknown".into()),
-                        reviewer.email.unwrap_or_else(|| "unknown".into()),
-                        reviewer.approvals
-                    );
-                    reviewer_list.push(name.clone());
+        let mut children = Vec::new();
 
-                    if verbose {
-                        for (approvei_label, approve_value) in &approval {
-                            println!("  * {:20.20} {:20.20} {:>5.5}", email, approvei_label.trim(), approve_value.trim());
+        // only list reviewers
+        debug!("threads: {}", cis.len());
+        for ci in cis {
+            let mut gerrit = gerrit.clone();
+            children.push(thread::spawn(move || {
+                let mut out = format!("reviewer for '{}':\n", ci.subject);
+                if let Ok(reviewers) = gerrit.changes().get_reviewers(&ci.id) {
+                    let mut reviewer_list = Vec::new();
+                    for reviewer in reviewers {
+                        let (name, email, approval) = (
+                            reviewer.name.unwrap_or_else(|| "unknown".into()),
+                            reviewer.email.unwrap_or_else(|| "unknown".into()),
+                            reviewer.approvals
+                        );
+                        reviewer_list.push(name.clone());
+
+                        if verbose {
+                            for (approvei_label, approve_value) in &approval {
+                                out.push_str(&format!("  * {:20.20} {:20.20} {:>5.5}\n", email, approvei_label.trim(), approve_value.trim()));
+                            }
                         }
                     }
-                }
-                if ! verbose {
-                    print!("  ");
-                    for reviewer in reviewer_list {
-                        print!("{}, ", reviewer);
+                    if ! verbose {
+                        out.push_str("  ".into());
+                        for reviewer in reviewer_list {
+                            out.push_str(&format!("{}, ", reviewer));
+                        }
+                        out.push_str("\n".into());
                     }
-                    println!("");
+                    println!("{}", out);
                 }
-            }
+            }));
+        }
+
+        for child in children {
+            let _ = child.join();
         }
     } else {
         println!("no changes for '{}' found", topicname);
