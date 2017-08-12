@@ -25,7 +25,6 @@ quick_error! {
             display("ProblemWithReviewer: {}", r)
         }
 
-        /// The reviewer isn't found
         ReviewerNotFound {
             description("Reviewer not found")
             display("Reviewer not found")
