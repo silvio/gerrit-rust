@@ -1,7 +1,4 @@
 
-// allow some lints for clippy
-#![allow(or_fun_call)]
-
 use clap::{self, SubCommand, App, Arg};
 use git2;
 use std::collections::HashMap;
