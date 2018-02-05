@@ -24,6 +24,7 @@ pub mod gerritapi;
 use clap::{Arg, App};
 use libgerrit::error::GGRError;
 use std::error::Error;
+use std::io::Write;
 use std::process::exit;
 
 mod version {
@@ -34,15 +35,15 @@ pub use version::VERSION;
 pub use version::VERSION_CSTR;
 
 fn init_log() {
-    let format = |record: &log::LogRecord| {
-        format!("[{:5.5}] [{}] [{}] - {}", record.level(),
+    let format = |formatter: &mut env_logger::fmt::Formatter, record: &log::Record| {
+        writeln!(formatter, "[{:5.5}] [{}] [{}] - {}", record.level(),
                 chrono::Local::now().to_rfc3339(),
-                record.location().module_path(),
+                record.module_path().unwrap_or("no module_path"),
                 record.args())
     };
 
-    let mut builder = env_logger::LogBuilder::new();
-    builder.format(format).filter(None, log::LogLevelFilter::Info);
+    let mut builder = env_logger::Builder::new();
+    builder.format(format).filter(None, log::LevelFilter::Info);
 
     if let Ok(ref rl) = std::env::var("RUST_LOG") {
         builder.parse(rl);

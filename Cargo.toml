@@ -22,11 +22,11 @@ doctest = true
 [dependencies]
 chrono = "0.4"
 clap = "2.26"
-env_logger = "0.4"
+env_logger = "0.5"
 git2 = "0.6"
 gron = "0.4"
 libgerrit = { path = "libgerrit", version = "0.2.7" }
-log = "0.3"
+log = "0.4"
 netrc = "0.4.1"
 regex = "0.2"
 rustc-serialize = "0.3"
