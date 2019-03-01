@@ -483,10 +483,10 @@ pub struct ChangeInfo {
     pub mergeable: Option<bool>,
     /// Number of inserted lines.
     /// V02.09
-    pub insertions: u16,
+    pub insertions: u32,
     /// Number of deleted lines.
     /// V02.09
-    pub deletions: u16,
+    pub deletions: u32,
     /// The sortkey of the change.
     /// V02.09, not in V02.13
     pub _sortkey: Option<String>,
